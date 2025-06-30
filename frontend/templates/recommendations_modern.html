@@ -1,0 +1,973 @@
+{% extends "base_modern.html" %}
+
+{% block title %}股票推荐 - CChanTrader-AI{% endblock %}
+
+{% block content %}
+<!-- 页面标题 -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">股票推荐中心</h1>
+    <p class="text-gray-600">基于技术分析和竞价数据的智能股票推荐</p>
+</div>
+
+<!-- 操作栏 -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex items-center space-x-4">
+        <button class="shadcn-button shadcn-button-primary" onclick="runAnalysis()">
+            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+            刷新分析
+        </button>
+        <button class="shadcn-button shadcn-button-outline" onclick="exportData()">
+            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+            导出数据
+        </button>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+        <span class="text-sm text-gray-600">视图模式:</span>
+        <div class="flex rounded-lg border border-gray-300 overflow-hidden">
+            <button class="view-toggle active" data-view="table" onclick="switchView('table')">
+                <i data-lucide="table" class="w-4 h-4"></i>
+            </button>
+            <button class="view-toggle" data-view="grid" onclick="switchView('grid')">
+                <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+            </button>
+            <button class="view-toggle" data-view="list" onclick="switchView('list')">
+                <i data-lucide="list" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选器 -->
+<div class="shadcn-card p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i data-lucide="filter" class="w-5 h-5 mr-2"></i>
+            智能筛选
+        </h3>
+        <button class="shadcn-button shadcn-button-outline text-sm" onclick="clearFilters()">
+            <i data-lucide="x" class="w-3 h-3 mr-1"></i>
+            清除筛选
+        </button>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <!-- 日期筛选 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">分析日期</label>
+            <input 
+                type="date" 
+                id="dateFilter" 
+                value="{{ current_date }}" 
+                class="shadcn-input"
+                onchange="applyDateFilter()"
+            >
+        </div>
+        
+        <!-- 市场筛选 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">交易市场</label>
+            <select id="marketFilter" class="shadcn-input" onchange="applyFilters()">
+                <option value="">全部市场</option>
+                <option value="上海主板">上海主板</option>
+                <option value="深圳主板">深圳主板</option>
+                <option value="中小板">中小板</option>
+                <option value="创业板">创业板</option>
+            </select>
+        </div>
+        
+        <!-- 信心等级筛选 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">信心等级</label>
+            <select id="confidenceFilter" class="shadcn-input" onchange="applyFilters()">
+                <option value="">全部等级</option>
+                <option value="very_high">🔥 强烈推荐</option>
+                <option value="high">✅ 推荐买入</option>
+                <option value="medium">👀 值得关注</option>
+            </select>
+        </div>
+        
+        <!-- 评分范围 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">评分范围</label>
+            <select id="scoreFilter" class="shadcn-input" onchange="applyFilters()">
+                <option value="">全部评分</option>
+                <option value="0.8-1.0">0.8 - 1.0 (优秀)</option>
+                <option value="0.7-0.8">0.7 - 0.8 (良好)</option>
+                <option value="0.6-0.7">0.6 - 0.7 (一般)</option>
+            </select>
+        </div>
+        
+        <!-- 竞价表现 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">竞价表现</label>
+            <select id="auctionFilter" class="shadcn-input" onchange="applyFilters()">
+                <option value="">全部表现</option>
+                <option value="strong_up">强势高开 (>2%)</option>
+                <option value="mild_up">温和高开 (0-2%)</option>
+                <option value="flat">平开 (±0.5%)</option>
+                <option value="down">低开 (<0%)</option>
+            </select>
+        </div>
+        
+        <!-- 搜索 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">搜索股票</label>
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="shadcn-input pl-10" 
+                    placeholder="代码或名称"
+                    oninput="applyFilters()"
+                >
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据统计 -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="shadcn-card p-4 text-center">
+        <div class="text-2xl font-bold text-blue-600" id="totalCount">{{ recommendations|length }}</div>
+        <div class="text-sm text-gray-600">推荐总数</div>
+    </div>
+    <div class="shadcn-card p-4 text-center">
+        <div class="text-2xl font-bold text-green-600" id="highConfidenceCount">
+            {{ recommendations|selectattr("confidence", "equalto", "very_high")|list|length }}
+        </div>
+        <div class="text-sm text-gray-600">强烈推荐</div>
+    </div>
+    <div class="shadcn-card p-4 text-center">
+        <div class="text-2xl font-bold text-purple-600" id="avgScore">
+            {% if recommendations %}
+                {{ "%.3f"|format(recommendations|map(attribute='total_score')|sum / recommendations|length) }}
+            {% else %}
+                0.000
+            {% endif %}
+        </div>
+        <div class="text-sm text-gray-600">平均评分</div>
+    </div>
+    <div class="shadcn-card p-4 text-center">
+        <div class="text-2xl font-bold text-orange-600" id="marketCount">
+            {{ recommendations|map(attribute='market')|unique|list|length }}
+        </div>
+        <div class="text-sm text-gray-600">覆盖市场</div>
+    </div>
+</div>
+
+<!-- 数据展示区域 -->
+<div id="dataContainer">
+    {% if recommendations %}
+    
+    <!-- 表格视图 -->
+    <div id="tableView" class="shadcn-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('symbol')">
+                            股票代码 <i data-lucide="arrow-up-down" class="w-3 h-3 inline ml-1"></i>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">股票名称</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">市场</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('current_price')">
+                            当前价格 <i data-lucide="arrow-up-down" class="w-3 h-3 inline ml-1"></i>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('total_score')">
+                            综合评分 <i data-lucide="arrow-up-down" class="w-3 h-3 inline ml-1"></i>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('auction_ratio')">
+                            竞价比率 <i data-lucide="arrow-up-down" class="w-3 h-3 inline ml-1"></i>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">信心等级</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作状态</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="tableBody">
+                    {% for stock in recommendations %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-150" data-stock-id="{{ stock.id }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-mono text-sm font-medium text-gray-900">{{ stock.symbol }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stock.stock_name or '未知' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="shadcn-badge shadcn-badge-secondary">{{ stock.market }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-gray-900">¥{{ "%.2f"|format(stock.current_price) }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="text-sm font-bold text-blue-600">{{ "%.3f"|format(stock.total_score) }}</div>
+                                <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (stock.total_score * 100)|round }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-semibold {{ 'text-green-600' if stock.auction_ratio > 0 else 'text-red-600' }}">
+                                {{ "%+.1f"|format(stock.auction_ratio) }}%
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="shadcn-badge {{ 
+                                'shadcn-badge-success' if stock.confidence == 'very_high' else 
+                                'shadcn-badge-primary' if stock.confidence == 'high' else 
+                                'shadcn-badge-warning' 
+                            }}">
+                                {{ 
+                                    '🔥 强推' if stock.confidence == 'very_high' else 
+                                    '✅ 推荐' if stock.confidence == 'high' else 
+                                    '👀 关注' 
+                                }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <select class="shadcn-input text-xs py-1" onchange="updateStockStatus({{ stock.id }}, this.value)">
+                                <option value="pending" {% if stock.status == 'pending' %}selected{% endif %}>待决策</option>
+                                <option value="bought" {% if stock.status == 'bought' %}selected{% endif %}>已买入</option>
+                                <option value="watching" {% if stock.status == 'watching' %}selected{% endif %}>观察中</option>
+                                <option value="ignored" {% if stock.status == 'ignored' %}selected{% endif %}>已忽略</option>
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="shadcn-button shadcn-button-outline text-xs py-1 px-3" onclick="showStockDetail('{{ stock.symbol }}')">
+                                详情
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 网格视图 -->
+    <div id="gridView" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="gridContainer">
+            {% for stock in recommendations %}
+            <div class="shadcn-card p-6 hover:shadow-lg transition-all duration-200 border-l-4 {{ 
+                'border-green-500' if stock.confidence == 'very_high' else 
+                'border-blue-500' if stock.confidence == 'high' else 
+                'border-yellow-500' 
+            }}" data-stock-id="{{ stock.id }}">
+                <!-- 股票头部 -->
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-gray-900">{{ stock.symbol }}</h3>
+                        <p class="text-sm text-gray-600">{{ stock.stock_name or '未知股票' }}</p>
+                    </div>
+                    <span class="shadcn-badge {{ 
+                        'shadcn-badge-success' if stock.confidence == 'very_high' else 
+                        'shadcn-badge-primary' if stock.confidence == 'high' else 
+                        'shadcn-badge-warning' 
+                    }}">
+                        {{ 
+                            '🔥 强推' if stock.confidence == 'very_high' else 
+                            '✅ 推荐' if stock.confidence == 'high' else 
+                            '👀 关注' 
+                        }}
+                    </span>
+                </div>
+
+                <!-- 价格和评分 -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">当前价格</p>
+                        <p class="text-xl font-bold text-gray-900">¥{{ "%.2f"|format(stock.current_price) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">综合评分</p>
+                        <div class="flex items-center">
+                            <p class="text-xl font-bold text-blue-600 mr-2">{{ "%.3f"|format(stock.total_score) }}</p>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (stock.total_score * 100)|round }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 关键指标 -->
+                <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                    <div class="bg-gray-50 rounded p-2">
+                        <p class="text-xs text-gray-500">竞价</p>
+                        <p class="text-sm font-semibold {{ 'text-green-600' if stock.auction_ratio > 0 else 'text-red-600' }}">
+                            {{ "%+.1f"|format(stock.auction_ratio) }}%
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 rounded p-2">
+                        <p class="text-xs text-gray-500">目标</p>
+                        <p class="text-sm font-semibold text-green-600">¥{{ "%.2f"|format(stock.target_price) }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded p-2">
+                        <p class="text-xs text-gray-500">止损</p>
+                        <p class="text-sm font-semibold text-red-600">¥{{ "%.2f"|format(stock.stop_loss) }}</p>
+                    </div>
+                </div>
+
+                <!-- 策略建议 -->
+                <div class="mb-4">
+                    <p class="text-xs text-gray-500 mb-1">策略建议</p>
+                    <p class="text-sm text-gray-700">{{ stock.strategy }}</p>
+                </div>
+
+                <!-- 状态和操作 -->
+                <div class="flex items-center space-x-2">
+                    <select class="flex-1 shadcn-input text-xs py-2" onchange="updateStockStatus({{ stock.id }}, this.value)">
+                        <option value="pending" {% if stock.status == 'pending' %}selected{% endif %}>待决策</option>
+                        <option value="bought" {% if stock.status == 'bought' %}selected{% endif %}>已买入</option>
+                        <option value="watching" {% if stock.status == 'watching' %}selected{% endif %}>观察</option>
+                        <option value="ignored" {% if stock.status == 'ignored' %}selected{% endif %}>忽略</option>
+                    </select>
+                    <button class="shadcn-button shadcn-button-outline text-xs py-2 px-3" onclick="showStockDetail('{{ stock.symbol }}')">
+                        详情
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- 列表视图 -->
+    <div id="listView" class="hidden space-y-4" id="listContainer">
+        {% for stock in recommendations %}
+        <div class="shadcn-card p-6 hover:shadow-md transition-all duration-200" data-stock-id="{{ stock.id }}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">{{ stock.symbol }}</h3>
+                            <p class="text-sm text-gray-600">{{ stock.stock_name or '未知股票' }}</p>
+                        </div>
+                        <span class="shadcn-badge {{ 
+                            'shadcn-badge-success' if stock.confidence == 'very_high' else 
+                            'shadcn-badge-primary' if stock.confidence == 'high' else 
+                            'shadcn-badge-warning' 
+                        }}">
+                            {{ 
+                                '🔥 强推' if stock.confidence == 'very_high' else 
+                                '✅ 推荐' if stock.confidence == 'high' else 
+                                '👀 关注' 
+                            }}
+                        </span>
+                        <span class="shadcn-badge shadcn-badge-secondary">{{ stock.market }}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">当前价格:</span>
+                            <span class="font-semibold text-gray-900 ml-1">¥{{ "%.2f"|format(stock.current_price) }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">综合评分:</span>
+                            <span class="font-bold text-blue-600 ml-1">{{ "%.3f"|format(stock.total_score) }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">竞价比率:</span>
+                            <span class="font-semibold ml-1 {{ 'text-green-600' if stock.auction_ratio > 0 else 'text-red-600' }}">
+                                {{ "%+.1f"|format(stock.auction_ratio) }}%
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">目标价:</span>
+                            <span class="font-semibold text-green-600 ml-1">¥{{ "%.2f"|format(stock.target_price) }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">止损价:</span>
+                            <span class="font-semibold text-red-600 ml-1">¥{{ "%.2f"|format(stock.stop_loss) }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">策略:</span>
+                            <span class="text-gray-700 ml-1">{{ stock.strategy }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 ml-6">
+                    <select class="shadcn-input text-sm" onchange="updateStockStatus({{ stock.id }}, this.value)">
+                        <option value="pending" {% if stock.status == 'pending' %}selected{% endif %}>待决策</option>
+                        <option value="bought" {% if stock.status == 'bought' %}selected{% endif %}>已买入</option>
+                        <option value="watching" {% if stock.status == 'watching' %}selected{% endif %}>观察中</option>
+                        <option value="ignored" {% if stock.status == 'ignored' %}selected{% endif %}>已忽略</option>
+                    </select>
+                    <button class="shadcn-button shadcn-button-outline" onclick="showStockDetail('{{ stock.symbol }}')">
+                        <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
+                        详情
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- 空状态 -->
+    <div class="shadcn-card p-12 text-center">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="trending-up" class="w-10 h-10 text-gray-400"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">暂无推荐数据</h3>
+        <p class="text-gray-600 mb-6">选择日期或点击"刷新分析"获取最新推荐</p>
+        <button class="shadcn-button shadcn-button-primary" onclick="runAnalysis()">
+            <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+            开始分析
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 股票详情模态框 -->
+<div id="stockDetailModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" onclick="closeStockDetailModal()"></div>
+    <div class="fixed inset-x-4 top-8 bottom-8 bg-white rounded-xl shadow-2xl overflow-hidden md:inset-x-auto md:left-1/2 md:w-full md:max-w-6xl md:transform md:-translate-x-1/2">
+        <div class="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+            <h3 class="text-xl font-bold text-gray-900">股票详细分析</h3>
+            <button onclick="closeStockDetailModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto custom-scrollbar" style="max-height: calc(100vh - 12rem);">
+            <div id="stockDetailContent" class="space-y-6">
+                <!-- 详情内容将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allStocks = {{ recommendations|tojson }};
+    let filteredStocks = [...allStocks];
+    let currentView = 'table';
+    let sortField = null;
+    let sortDirection = 'asc';
+
+    // 视图切换
+    function switchView(view) {
+        currentView = view;
+        
+        // 更新按钮状态
+        document.querySelectorAll('.view-toggle').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-view="${view}"]`).classList.add('active');
+        
+        // 显示/隐藏视图
+        document.getElementById('tableView').classList.toggle('hidden', view !== 'table');
+        document.getElementById('gridView').classList.toggle('hidden', view !== 'grid');
+        document.getElementById('listView').classList.toggle('hidden', view !== 'list');
+        
+        updateDisplay();
+    }
+
+    // 应用筛选
+    function applyFilters() {
+        const market = document.getElementById('marketFilter').value;
+        const confidence = document.getElementById('confidenceFilter').value;
+        const scoreRange = document.getElementById('scoreFilter').value;
+        const auctionType = document.getElementById('auctionFilter').value;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        
+        filteredStocks = allStocks.filter(stock => {
+            let match = true;
+            
+            // 市场筛选
+            if (market && stock.market !== market) match = false;
+            
+            // 信心等级筛选
+            if (confidence && stock.confidence !== confidence) match = false;
+            
+            // 评分范围筛选
+            if (scoreRange) {
+                const [min, max] = scoreRange.split('-').map(Number);
+                if (stock.total_score < min || stock.total_score > max) match = false;
+            }
+            
+            // 竞价表现筛选
+            if (auctionType) {
+                const ratio = stock.auction_ratio;
+                switch (auctionType) {
+                    case 'strong_up':
+                        if (ratio <= 2) match = false;
+                        break;
+                    case 'mild_up':
+                        if (ratio <= 0 || ratio > 2) match = false;
+                        break;
+                    case 'flat':
+                        if (Math.abs(ratio) > 0.5) match = false;
+                        break;
+                    case 'down':
+                        if (ratio >= 0) match = false;
+                        break;
+                }
+            }
+            
+            // 搜索筛选
+            if (search && !stock.symbol.toLowerCase().includes(search) && 
+                !stock.stock_name.toLowerCase().includes(search)) {
+                match = false;
+            }
+            
+            return match;
+        });
+        
+        updateDisplay();
+        updateStats();
+    }
+
+    // 日期筛选
+    function applyDateFilter() {
+        const newDate = document.getElementById('dateFilter').value;
+        window.location.href = `{{ url_for('recommendations') }}?date=${newDate}`;
+    }
+
+    // 清除筛选
+    function clearFilters() {
+        document.getElementById('marketFilter').value = '';
+        document.getElementById('confidenceFilter').value = '';
+        document.getElementById('scoreFilter').value = '';
+        document.getElementById('auctionFilter').value = '';
+        document.getElementById('searchInput').value = '';
+        
+        filteredStocks = [...allStocks];
+        updateDisplay();
+        updateStats();
+        
+        showToast('筛选已清除', 'info', 1000);
+    }
+
+    // 排序表格
+    function sortTable(field) {
+        if (sortField === field) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDirection = 'asc';
+        }
+        
+        filteredStocks.sort((a, b) => {
+            let aVal = a[field];
+            let bVal = b[field];
+            
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+            
+            if (sortDirection === 'asc') {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+        
+        updateDisplay();
+    }
+
+    // 更新显示
+    function updateDisplay() {
+        if (currentView === 'table') {
+            updateTableDisplay();
+        } else if (currentView === 'grid') {
+            updateGridDisplay();
+        } else {
+            updateListDisplay();
+        }
+    }
+
+    // 更新表格显示
+    function updateTableDisplay() {
+        const tbody = document.getElementById('tableBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        filteredStocks.forEach(stock => {
+            const row = createTableRow(stock);
+            tbody.appendChild(row);
+        });
+    }
+
+    // 更新网格显示
+    function updateGridDisplay() {
+        const container = document.getElementById('gridContainer');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        filteredStocks.forEach(stock => {
+            const card = createGridCard(stock);
+            container.appendChild(card);
+        });
+    }
+
+    // 更新列表显示
+    function updateListDisplay() {
+        const container = document.getElementById('listContainer');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        filteredStocks.forEach(stock => {
+            const item = createListItem(stock);
+            container.appendChild(item);
+        });
+    }
+
+    // 创建表格行
+    function createTableRow(stock) {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 transition-colors duration-150';
+        tr.dataset.stockId = stock.id;
+        
+        const confidenceMap = {
+            'very_high': { text: '🔥 强推', class: 'shadcn-badge-success' },
+            'high': { text: '✅ 推荐', class: 'shadcn-badge-primary' },
+            'medium': { text: '👀 关注', class: 'shadcn-badge-warning' }
+        };
+        
+        const confidence = confidenceMap[stock.confidence] || confidenceMap['medium'];
+        
+        tr.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="font-mono text-sm font-medium text-gray-900">${stock.symbol}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${stock.stock_name || '未知'}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="shadcn-badge shadcn-badge-secondary">${stock.market}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-semibold text-gray-900">¥${stock.current_price.toFixed(2)}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="text-sm font-bold text-blue-600">${stock.total_score.toFixed(3)}</div>
+                    <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.round(stock.total_score * 100)}%"></div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm font-semibold ${stock.auction_ratio > 0 ? 'text-green-600' : 'text-red-600'}">
+                    ${stock.auction_ratio > 0 ? '+' : ''}${stock.auction_ratio.toFixed(1)}%
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="shadcn-badge ${confidence.class}">${confidence.text}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <select class="shadcn-input text-xs py-1" onchange="updateStockStatus(${stock.id}, this.value)">
+                    <option value="pending" ${stock.status === 'pending' ? 'selected' : ''}>待决策</option>
+                    <option value="bought" ${stock.status === 'bought' ? 'selected' : ''}>已买入</option>
+                    <option value="watching" ${stock.status === 'watching' ? 'selected' : ''}>观察中</option>
+                    <option value="ignored" ${stock.status === 'ignored' ? 'selected' : ''}>已忽略</option>
+                </select>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="shadcn-button shadcn-button-outline text-xs py-1 px-3" onclick="showStockDetail('${stock.symbol}')">
+                    详情
+                </button>
+            </td>
+        `;
+        
+        return tr;
+    }
+
+    // 创建网格卡片
+    function createGridCard(stock) {
+        // 实现网格卡片创建逻辑
+        const div = document.createElement('div');
+        div.className = `shadcn-card p-6 hover:shadow-lg transition-all duration-200 border-l-4 ${
+            stock.confidence === 'very_high' ? 'border-green-500' :
+            stock.confidence === 'high' ? 'border-blue-500' : 'border-yellow-500'
+        } animate-fade-in`;
+        div.dataset.stockId = stock.id;
+        
+        // 内容省略，使用模板中的结构
+        div.innerHTML = `<!-- 网格卡片内容 -->`;
+        
+        return div;
+    }
+
+    // 创建列表项
+    function createListItem(stock) {
+        // 实现列表项创建逻辑
+        const div = document.createElement('div');
+        div.className = 'shadcn-card p-6 hover:shadow-md transition-all duration-200 animate-fade-in';
+        div.dataset.stockId = stock.id;
+        
+        // 内容省略，使用模板中的结构
+        div.innerHTML = `<!-- 列表项内容 -->`;
+        
+        return div;
+    }
+
+    // 更新统计信息
+    function updateStats() {
+        document.getElementById('totalCount').textContent = filteredStocks.length;
+        document.getElementById('highConfidenceCount').textContent = 
+            filteredStocks.filter(s => s.confidence === 'very_high').length;
+        
+        const avgScore = filteredStocks.length > 0 ? 
+            filteredStocks.reduce((sum, s) => sum + s.total_score, 0) / filteredStocks.length : 0;
+        document.getElementById('avgScore').textContent = avgScore.toFixed(3);
+        
+        const markets = [...new Set(filteredStocks.map(s => s.market))];
+        document.getElementById('marketCount').textContent = markets.length;
+    }
+
+    // 更新股票状态
+    async function updateStockStatus(stockId, newStatus) {
+        try {
+            const response = await makeRequest('/api/update_stock_status', 'POST', {
+                id: stockId,
+                status: newStatus
+            });
+            
+            if (response.success) {
+                showToast('状态已更新', 'success', 1000);
+                // 更新本地数据
+                const stock = allStocks.find(s => s.id === stockId);
+                if (stock) {
+                    stock.status = newStatus;
+                }
+            } else {
+                showToast(response.message, 'error');
+            }
+        } catch (error) {
+            showToast('更新失败', 'error');
+        }
+    }
+
+    // 显示股票详情
+    function showStockDetail(symbol) {
+        const stock = allStocks.find(s => s.symbol === symbol);
+        if (!stock) return;
+        
+        const modal = document.getElementById('stockDetailModal');
+        const content = document.getElementById('stockDetailContent');
+        
+        // 显示加载状态
+        content.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="loading-skeleton h-32 rounded"></div>
+                <div class="loading-skeleton h-32 rounded"></div>
+                <div class="loading-skeleton h-32 rounded"></div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        // 加载详细信息
+        setTimeout(() => {
+            content.innerHTML = generateStockDetailHTML(stock);
+            lucide.createIcons();
+        }, 300);
+    }
+
+    // 生成股票详情HTML
+    function generateStockDetailHTML(stock) {
+        return `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 基本信息 -->
+                <div class="shadcn-card p-6">
+                    <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                        基本信息
+                    </h4>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">股票代码:</span>
+                            <span class="font-mono font-medium">${stock.symbol}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">股票名称:</span>
+                            <span class="font-medium">${stock.stock_name || '未知'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">所属市场:</span>
+                            <span class="shadcn-badge shadcn-badge-secondary">${stock.market}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">当前价格:</span>
+                            <span class="font-bold text-lg">¥${stock.current_price.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 评分详情 -->
+                <div class="shadcn-card p-6">
+                    <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="trending-up" class="w-4 h-4 mr-2"></i>
+                        评分详情
+                    </h4>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-500">综合评分</span>
+                                <span class="font-bold text-blue-600">${stock.total_score.toFixed(3)}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.round(stock.total_score * 100)}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-500">技术评分</span>
+                                <span class="font-semibold text-green-600">${stock.tech_score.toFixed(3)}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full" style="width: ${Math.round(stock.tech_score * 100)}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-500">竞价评分</span>
+                                <span class="font-semibold text-purple-600">${stock.auction_score.toFixed(3)}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: ${Math.round(stock.auction_score * 100)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 交易建议 -->
+                <div class="shadcn-card p-6">
+                    <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="target" class="w-4 h-4 mr-2"></i>
+                        交易建议
+                    </h4>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">建议入场:</span>
+                            <span class="font-semibold text-blue-600">¥${stock.entry_price.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">止损位:</span>
+                            <span class="font-semibold text-red-600">¥${stock.stop_loss.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">目标位:</span>
+                            <span class="font-semibold text-green-600">¥${stock.target_price.toFixed(2)}</span>
+                        </div>
+                        <div class="pt-3 border-t">
+                            <span class="text-gray-500 block mb-2">策略建议:</span>
+                            <span class="text-gray-700">${stock.strategy}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 竞价分析 -->
+            <div class="shadcn-card p-6 mt-6">
+                <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="activity" class="w-4 h-4 mr-2"></i>
+                    竞价分析详情
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold mb-2 ${stock.auction_ratio > 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${stock.auction_ratio > 0 ? '+' : ''}${stock.auction_ratio.toFixed(2)}%
+                        </div>
+                        <div class="text-sm text-gray-500">竞价比率</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold mb-2 text-blue-600">${stock.gap_type || 'unknown'}</div>
+                        <div class="text-sm text-gray-500">缺口类型</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold mb-2 text-purple-600">${(stock.capital_bias || 0).toFixed(3)}</div>
+                        <div class="text-sm text-gray-500">资金偏向</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 关闭股票详情模态框
+    function closeStockDetailModal() {
+        document.getElementById('stockDetailModal').classList.add('hidden');
+    }
+
+    // 运行分析
+    async function runAnalysis() {
+        showToast('开始执行股票分析，请稍候...', 'info');
+        
+        try {
+            const response = await makeRequest('/api/run_analysis', 'POST');
+            if (response.success) {
+                showToast(response.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showToast(response.message, 'error');
+            }
+        } catch (error) {
+            showToast('分析失败', 'error');
+        }
+    }
+
+    // 导出数据
+    function exportData() {
+        const csvContent = generateCSV(filteredStocks);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `stock_recommendations_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast('数据导出成功', 'success');
+    }
+
+    // 生成CSV
+    function generateCSV(stocks) {
+        const headers = ['股票代码', '股票名称', '市场', '当前价格', '综合评分', '竞价比率', '信心等级', '策略建议'];
+        const rows = stocks.map(stock => [
+            stock.symbol,
+            stock.stock_name || '未知',
+            stock.market,
+            stock.current_price.toFixed(2),
+            stock.total_score.toFixed(3),
+            stock.auction_ratio.toFixed(1) + '%',
+            stock.confidence === 'very_high' ? '强烈推荐' : 
+            stock.confidence === 'high' ? '推荐买入' : '值得关注',
+            stock.strategy
+        ]);
+        
+        return [headers, ...rows].map(row => 
+            row.map(field => `"${field}"`).join(',')
+        ).join('\n');
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化视图切换按钮样式
+        document.querySelectorAll('.view-toggle').forEach(btn => {
+            btn.className += ' px-3 py-2 text-sm font-medium border transition-colors duration-200';
+            if (btn.classList.contains('active')) {
+                btn.className += ' bg-blue-600 text-white border-blue-600';
+            } else {
+                btn.className += ' bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
+            }
+        });
+
+        // 初始化统计
+        updateStats();
+        
+        // 初始化图标
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}

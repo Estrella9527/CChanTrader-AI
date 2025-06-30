@@ -1,0 +1,822 @@
+{% extends "base.html" %}
+
+{% block title %}系统配置 - CChanTrader-AI 智能交易管理平台{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- 页面标题 -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight">系统配置管理</h1>
+            <p class="text-gray-600 mt-2">管理系统参数、邮件配置和策略设置</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="button button-outline" onclick="exportConfig()">
+                <i data-lucide="download" class="w-4 h-4 mr-2"></i>导出配置
+            </button>
+            <button class="button button-outline" onclick="importConfig()">
+                <i data-lucide="upload" class="w-4 h-4 mr-2"></i>导入配置
+            </button>
+        </div>
+    </div>
+
+    <!-- 配置状态概览 -->
+    {% set config_complete = email_config.sender_email and email_config.sender_password and email_config.recipient_emails %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% if config_complete %}
+        <div class="card bg-green-50 border-green-200">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-500 mr-2"></i>
+                    <span class="text-green-700 font-medium">邮件系统已完全配置</span>
+                </div>
+                <p class="text-sm text-green-600 mt-1">系统可以正常发送邮件日报</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="card bg-yellow-50 border-yellow-200">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-yellow-500 mr-2"></i>
+                    <span class="text-yellow-700 font-medium">邮件配置不完整</span>
+                </div>
+                <p class="text-sm text-yellow-600 mt-1">请完成以下配置项以启用邮件功能</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card bg-blue-50 border-blue-200">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <i data-lucide="settings" class="w-5 h-5 text-blue-500 mr-2"></i>
+                    <span class="text-blue-700 font-medium">策略参数配置</span>
+                </div>
+                <p class="text-sm text-blue-600 mt-1">
+                    技术权重: {{ (strategy_config.tech_weight * 100)|round|int }}% | 
+                    竞价权重: {{ (strategy_config.auction_weight * 100)|round|int }}% | 
+                    更新时间: {{ strategy_config.updated_at }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置导航 -->
+    <div class="card">
+        <div class="border-b">
+            <nav class="flex space-x-8 px-6" role="tablist">
+                <button role="tab" class="tab-trigger active" data-tab="email" onclick="switchTab('email')">
+                    <i data-lucide="mail" class="w-4 h-4 mr-2"></i>邮件配置
+                </button>
+                <button role="tab" class="tab-trigger" data-tab="strategy" onclick="switchTab('strategy')">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>策略参数
+                </button>
+                <button role="tab" class="tab-trigger" data-tab="schedule" onclick="switchTab('schedule')">
+                    <i data-lucide="clock" class="w-4 h-4 mr-2"></i>调度设置
+                </button>
+            </nav>
+        </div>
+        
+        <!-- 邮件配置 -->
+        <div id="email-tab" class="tab-content p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <form id="emailConfigForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="user" class="w-4 h-4 inline mr-1"></i>发送邮箱 *
+                                </label>
+                                <input type="email" class="input" id="senderEmail" name="sender_email" 
+                                       value="{{ email_config.sender_email }}" placeholder="your_email@qq.com" required>
+                                {% if email_config.sender_email %}
+                                <p class="text-xs text-green-600 mt-1">✅ 发送邮箱已配置: {{ email_config.sender_email }}</p>
+                                {% else %}
+                                <p class="text-xs text-gray-600 mt-1">用于发送日报的邮箱地址</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="server" class="w-4 h-4 inline mr-1"></i>邮件服务商
+                                </label>
+                                <select class="select" id="emailProvider" name="email_provider" onchange="updateEmailGuide()">
+                                    <option value="qq" {% if email_config.email_provider == 'qq' %}selected{% endif %}>QQ邮箱</option>
+                                    <option value="163" {% if email_config.email_provider == '163' %}selected{% endif %}>163邮箱</option>
+                                    <option value="gmail" {% if email_config.email_provider == 'gmail' %}selected{% endif %}>Gmail</option>
+                                    <option value="outlook" {% if email_config.email_provider == 'outlook' %}selected{% endif %}>Outlook</option>
+                                    <option value="sina" {% if email_config.email_provider == 'sina' %}selected{% endif %}>新浪邮箱</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="key" class="w-4 h-4 inline mr-1"></i>邮箱授权码 *
+                                </label>
+                                <div class="flex">
+                                    <input type="password" class="input rounded-r-none" id="senderPassword" name="sender_password" 
+                                           value="{{ email_config.sender_password }}" placeholder="邮箱授权码(非登录密码)" required>
+                                    <button type="button" class="button button-outline rounded-l-none border-l-0" onclick="togglePassword()">
+                                        <i data-lucide="eye" id="passwordToggleIcon" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                {% if email_config.sender_password %}
+                                <p class="text-xs text-green-600 mt-1">✅ 邮箱授权码已配置</p>
+                                {% endif %}
+                                <p class="text-xs text-gray-600 mt-1">需要在邮箱设置中开启SMTP服务并生成授权码</p>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="inbox" class="w-4 h-4 inline mr-1"></i>接收邮箱 *
+                                </label>
+                                <div id="recipientEmailsContainer" class="space-y-2">
+                                    {% set emails = email_config.recipient_emails.split(',') if email_config.recipient_emails else [''] %}
+                                    {% for email in emails %}
+                                    <div class="flex space-x-2">
+                                        <input type="email" class="input flex-1" name="recipient_emails[]" 
+                                               value="{{ email.strip() }}" placeholder="recipient@email.com" required>
+                                        <button type="button" class="button button-outline px-3" onclick="removeEmailField(this)" {% if loop.first and loop.length == 1 %}style="display: none"{% endif %}>
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="flex justify-between items-center mt-2">
+                                    {% if email_config.recipient_emails %}
+                                    <p class="text-xs text-green-600">✅ 已配置 {{ email_config.recipient_emails.split(',')|length }} 个接收邮箱</p>
+                                    {% else %}
+                                    <p class="text-xs text-gray-600">接收日报的邮箱地址，支持多个收件人</p>
+                                    {% endif %}
+                                    <button type="button" class="button button-ghost button-sm" onclick="addEmailField()">
+                                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i>添加邮箱
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button type="submit" class="button button-primary">
+                                <i data-lucide="save" class="w-4 h-4 mr-2"></i>保存配置
+                            </button>
+                            <button type="button" class="button button-outline" onclick="testEmailConfig()">
+                                <i data-lucide="send" class="w-4 h-4 mr-2"></i>测试邮件
+                            </button>
+                            <button type="button" class="button button-ghost" onclick="resetEmailForm()">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i>重置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 邮箱配置指导 -->
+                <div class="card p-4">
+                    <div class="flex items-center mb-4">
+                        <i data-lucide="help-circle" class="w-5 h-5 mr-2 text-blue-500"></i>
+                        <h6 class="font-semibold">配置指导</h6>
+                    </div>
+                    <div id="emailGuide">
+                        <div class="guide-section" data-provider="qq">
+                            <h6 class="text-blue-600 font-semibold mb-2">QQ邮箱配置步骤：</h6>
+                            <ol class="text-sm space-y-1 text-gray-600">
+                                <li>1. 登录QQ邮箱</li>
+                                <li>2. 设置 → 账户 → 开启SMTP服务</li>
+                                <li>3. 生成授权码（非QQ密码）</li>
+                                <li>4. 在上方填入授权码</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="guide-section hidden" data-provider="163">
+                            <h6 class="text-blue-600 font-semibold mb-2">163邮箱配置步骤：</h6>
+                            <ol class="text-sm space-y-1 text-gray-600">
+                                <li>1. 登录163邮箱</li>
+                                <li>2. 设置 → 客户端授权密码</li>
+                                <li>3. 开启SMTP服务</li>
+                                <li>4. 设置客户端授权密码</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="guide-section hidden" data-provider="gmail">
+                            <h6 class="text-blue-600 font-semibold mb-2">Gmail配置步骤：</h6>
+                            <ol class="text-sm space-y-1 text-gray-600">
+                                <li>1. 开启两步验证</li>
+                                <li>2. 生成应用专用密码</li>
+                                <li>3. 使用应用密码登录</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-default mt-4">
+                        <div class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 mr-2 mt-0.5 text-yellow-500"></i>
+                            <p class="text-sm"><strong>安全提示：</strong>授权码仅用于第三方客户端登录，不是您的邮箱登录密码</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 策略参数配置 -->
+        <div id="strategy-tab" class="tab-content p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-6">
+                    <form id="strategyConfigForm">
+                        <!-- 评分权重配置 -->
+                        <div class="card p-6">
+                            <h6 class="font-semibold mb-4">评分权重配置</h6>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">技术分析权重</label>
+                                    <div class="space-y-3">
+                                        <input type="range" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                               id="techWeight" min="0.4" max="0.8" step="0.05" value="{{ strategy_config.tech_weight }}" oninput="updateWeightValues()">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">40%</span>
+                                            <span id="techWeightValue" class="badge badge-default">{{ (strategy_config.tech_weight * 100)|round|int }}%</span>
+                                            <span class="text-gray-600">80%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">竞价分析权重</label>
+                                    <div class="space-y-3">
+                                        <input type="range" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                               id="auctionWeight" min="0.2" max="0.6" step="0.05" value="{{ strategy_config.auction_weight }}" oninput="updateWeightValues()">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">20%</span>
+                                            <span id="auctionWeightValue" class="badge badge-secondary">{{ (strategy_config.auction_weight * 100)|round|int }}%</span>
+                                            <span class="text-gray-600">60%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-default mt-4">
+                                <div class="flex items-start">
+                                    <i data-lucide="info" class="w-4 h-4 mr-2 mt-0.5 text-blue-500"></i>
+                                    <p class="text-sm">权重总和会自动调整为100%，建议技术分析权重60-75%</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 筛选条件配置 -->
+                        <div class="card p-6">
+                            <h6 class="font-semibold mb-4">筛选条件配置</h6>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">最低评分阈值</label>
+                                    <input type="number" class="input" id="scoreThreshold" 
+                                           min="0.5" max="0.9" step="0.05" value="{{ strategy_config.score_threshold }}">
+                                    <p class="text-xs text-gray-600 mt-1">只推荐评分高于此值的股票</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">最大推荐数量</label>
+                                    <input type="number" class="input" id="maxRecommendations" 
+                                           min="5" max="50" value="{{ strategy_config.max_recommendations }}">
+                                    <p class="text-xs text-gray-600 mt-1">每日最多推荐股票数量</p>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium mb-2">价格范围</label>
+                                    <div class="flex space-x-2">
+                                        <input type="number" class="input flex-1" placeholder="最低价" 
+                                               id="minPrice" value="{{ strategy_config.min_price }}" min="1" max="10">
+                                        <span class="flex items-center px-3 text-gray-500">至</span>
+                                        <input type="number" class="input flex-1" placeholder="最高价" 
+                                               id="maxPrice" value="{{ strategy_config.max_price }}" min="10" max="1000">
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-1">股票价格筛选范围（元）</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button type="submit" class="button button-primary">
+                                <i data-lucide="save" class="w-4 h-4 mr-2"></i>保存策略参数
+                            </button>
+                            <button type="button" class="button button-ghost" onclick="resetStrategyForm()">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i>恢复默认
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 参数说明 -->
+                <div class="card p-4">
+                    <div class="flex items-center mb-4">
+                        <i data-lucide="lightbulb" class="w-5 h-5 mr-2 text-blue-500"></i>
+                        <h6 class="font-semibold">参数说明</h6>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h6 class="text-blue-600 font-semibold text-sm">技术分析权重</h6>
+                            <p class="text-xs text-gray-600">包含均线、RSI、成交量等传统技术指标的权重比例</p>
+                        </div>
+                        
+                        <div>
+                            <h6 class="text-blue-600 font-semibold text-sm">竞价分析权重</h6>
+                            <p class="text-xs text-gray-600">集合竞价数据分析的权重，包括竞价比率、资金流向等</p>
+                        </div>
+                        
+                        <div>
+                            <h6 class="text-blue-600 font-semibold text-sm">评分阈值</h6>
+                            <p class="text-xs text-gray-600">设置越高越严格，推荐股票质量越高但数量越少</p>
+                        </div>
+                        
+                        <div class="alert alert-default">
+                            <div class="flex items-start">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 mr-2 mt-0.5 text-yellow-500"></i>
+                                <p class="text-xs">修改参数后建议先测试分析效果</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 调度设置 -->
+        <div id="schedule-tab" class="tab-content p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <div class="card p-6">
+                        <h6 class="font-semibold mb-4">自动调度配置</h6>
+                        <form id="scheduleConfigForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">主要执行时间</label>
+                                    <div class="flex space-x-2">
+                                        <input type="time" class="input flex-1" value="09:25" readonly>
+                                        <span class="flex items-center px-3 text-gray-500">至</span>
+                                        <input type="time" class="input flex-1" value="09:29" readonly>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-1">交易日集合竞价结束后自动执行</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">备用执行时间</label>
+                                    <input type="time" class="input" value="15:05" readonly>
+                                    <p class="text-xs text-gray-600 mt-1">如主要时间执行失败，盘后补发</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="autoSchedule" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="autoSchedule" class="text-sm font-medium">启用自动调度</label>
+                                </div>
+                                <p class="text-xs text-gray-600 ml-7">开启后系统会在指定时间自动执行分析</p>
+                                
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="weekendSkip" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="weekendSkip" class="text-sm font-medium">跳过周末和节假日</label>
+                                </div>
+                                <p class="text-xs text-gray-600 ml-7">自动识别非交易日并跳过执行</p>
+                                
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="emailNotification" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="emailNotification" class="text-sm font-medium">发送邮件通知</label>
+                                </div>
+                                <p class="text-xs text-gray-600 ml-7">分析完成后自动发送邮件日报</p>
+                            </div>
+                            
+                            <button type="submit" class="button button-primary">
+                                <i data-lucide="save" class="w-4 h-4 mr-2"></i>保存调度设置
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 调度说明 -->
+                <div class="card p-4">
+                    <div class="flex items-center mb-4">
+                        <i data-lucide="info" class="w-5 h-5 mr-2 text-blue-500"></i>
+                        <h6 class="font-semibold">调度说明</h6>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div>
+                                <div class="text-sm font-medium text-blue-600">9:25</div>
+                                <div class="text-xs text-gray-600">集合竞价结束，开始数据分析</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div>
+                                <div class="text-sm font-medium text-blue-600">9:26-9:29</div>
+                                <div class="text-xs text-gray-600">分析股票数据，生成推荐列表</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div>
+                                <div class="text-sm font-medium text-blue-600">9:29</div>
+                                <div class="text-xs text-gray-600">发送邮件日报</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3">
+                            <div class="w-2 h-2 rounded-full bg-gray-400 mt-2"></div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-600">15:05</div>
+                                <div class="text-xs text-gray-600">备用时间，补发失败的报告</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-default mt-4">
+                        <div class="flex items-start">
+                            <i data-lucide="clock" class="w-4 h-4 mr-2 mt-0.5 text-blue-500"></i>
+                            <p class="text-xs">系统会自动检测交易日，非交易日不执行</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentTab = 'email';
+    
+    // 切换标签页
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // 更新标签状态
+        document.querySelectorAll('.tab-trigger').forEach(trigger => {
+            trigger.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        
+        // 显示/隐藏内容
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        document.getElementById(`${tab}-tab`).classList.remove('hidden');
+        
+        // 重新初始化图标
+        lucide.createIcons();
+    }
+    
+    // 切换密码显示
+    function togglePassword() {
+        const passwordInput = document.getElementById('senderPassword');
+        const toggleIcon = document.getElementById('passwordToggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.setAttribute('data-lucide', 'eye-off');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.setAttribute('data-lucide', 'eye');
+        }
+        lucide.createIcons();
+    }
+    
+    // 更新邮箱配置指导
+    function updateEmailGuide() {
+        const provider = document.getElementById('emailProvider').value;
+        const guides = document.querySelectorAll('.guide-section');
+        
+        guides.forEach(guide => {
+            if (guide.dataset.provider === provider) {
+                guide.classList.remove('hidden');
+            } else {
+                guide.classList.add('hidden');
+            }
+        });
+    }
+    
+    // 更新权重显示
+    function updateWeightValues() {
+        const techWeight = parseFloat(document.getElementById('techWeight').value);
+        const auctionWeight = parseFloat(document.getElementById('auctionWeight').value);
+        
+        document.getElementById('techWeightValue').textContent = Math.round(techWeight * 100) + '%';
+        document.getElementById('auctionWeightValue').textContent = Math.round(auctionWeight * 100) + '%';
+        
+        // 确保权重总和为100%
+        const total = techWeight + auctionWeight;
+        if (Math.abs(total - 1.0) > 0.01) {
+            const newAuctionWeight = Math.max(0.2, Math.min(0.6, 1.0 - techWeight));
+            document.getElementById('auctionWeight').value = newAuctionWeight.toFixed(2);
+            document.getElementById('auctionWeightValue').textContent = Math.round(newAuctionWeight * 100) + '%';
+        }
+    }
+    
+    // 添加邮箱字段
+    function addEmailField() {
+        const container = document.getElementById('recipientEmailsContainer');
+        const emailFields = container.querySelectorAll('input[name="recipient_emails[]"]');
+        
+        const newField = document.createElement('div');
+        newField.className = 'flex space-x-2';
+        newField.innerHTML = `
+            <input type="email" class="input flex-1" name="recipient_emails[]" 
+                   placeholder="recipient@email.com" required>
+            <button type="button" class="button button-outline px-3" onclick="removeEmailField(this)">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        `;
+        
+        container.appendChild(newField);
+        
+        // 显示所有删除按钮
+        updateRemoveButtons();
+        
+        // 重新初始化图标
+        lucide.createIcons();
+    }
+    
+    // 删除邮箱字段
+    function removeEmailField(button) {
+        const container = document.getElementById('recipientEmailsContainer');
+        const emailFields = container.querySelectorAll('.flex');
+        
+        if (emailFields.length > 1) {
+            button.parentElement.remove();
+            updateRemoveButtons();
+        }
+    }
+    
+    // 更新删除按钮显示状态
+    function updateRemoveButtons() {
+        const container = document.getElementById('recipientEmailsContainer');
+        const emailFields = container.querySelectorAll('.flex');
+        const removeButtons = container.querySelectorAll('button[onclick*="removeEmailField"]');
+        
+        removeButtons.forEach(button => {
+            if (emailFields.length === 1) {
+                button.style.display = 'none';
+            } else {
+                button.style.display = 'block';
+            }
+        });
+    }
+
+    // 邮件配置表单提交
+    document.getElementById('emailConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const configData = {};
+        
+        // 处理普通字段
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'recipient_emails[]') {
+                configData[key] = value;
+            }
+        }
+        
+        // 处理多个邮箱地址
+        const emails = formData.getAll('recipient_emails[]').filter(email => email.trim() !== '');
+        configData.recipient_emails = emails.join(',');
+        
+        // 显示保存状态
+        const submitButton = document.querySelector('#emailConfigForm button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>保存中...';
+        submitButton.disabled = true;
+        
+        makeRequest('/api/save_email_config', 'POST', configData)
+            .then(response => {
+                if (response.success) {
+                    showNotification(response.message, 'default');
+                    // 清除本地草稿
+                    clearConfigDraft();
+                    
+                    // 显示详细成功信息
+                    if (response.debug_info) {
+                        console.log('保存成功详情:', response.debug_info);
+                    }
+                    
+                    // 强制清除浏览器缓存并刷新页面
+                    setTimeout(() => {
+                        // 添加时间戳参数强制刷新
+                        const timestamp = new Date().getTime();
+                        window.location.href = window.location.pathname + '?t=' + timestamp;
+                    }, 1500);
+                } else {
+                    showNotification(response.message, 'destructive');
+                    // 显示调试信息
+                    if (response.debug_info) {
+                        console.error('保存失败详情:', response.debug_info);
+                    }
+                }
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                lucide.createIcons();
+            });
+    });
+    
+    // 策略配置表单提交
+    document.getElementById('strategyConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const strategyData = {
+            tech_weight: parseFloat(document.getElementById('techWeight').value),
+            auction_weight: parseFloat(document.getElementById('auctionWeight').value),
+            score_threshold: parseFloat(document.getElementById('scoreThreshold').value),
+            max_recommendations: parseInt(document.getElementById('maxRecommendations').value),
+            min_price: parseFloat(document.getElementById('minPrice').value),
+            max_price: parseFloat(document.getElementById('maxPrice').value)
+        };
+        
+        // 显示保存状态
+        const submitButton = document.querySelector('#strategyConfigForm button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>保存中...';
+        submitButton.disabled = true;
+        
+        makeRequest('/api/save_strategy_config', 'POST', strategyData)
+            .then(response => {
+                if (response.success) {
+                    showNotification(response.message, 'default');
+                    // 延迟刷新页面以显示新的配置状态
+                    setTimeout(() => {
+                        const timestamp = new Date().getTime();
+                        window.location.href = window.location.pathname + '?t=' + timestamp;
+                    }, 1500);
+                } else {
+                    showNotification(response.message, 'destructive');
+                }
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                lucide.createIcons();
+            });
+    });
+    
+    // 测试邮件配置
+    function testEmailConfig() {
+        // 先保存配置
+        const formData = new FormData(document.getElementById('emailConfigForm'));
+        const configData = {};
+        
+        // 处理普通字段
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'recipient_emails[]') {
+                configData[key] = value;
+            }
+        }
+        
+        // 处理多个邮箱地址
+        const emails = formData.getAll('recipient_emails[]').filter(email => email.trim() !== '');
+        configData.recipient_emails = emails.join(',');
+        
+        // 显示测试状态
+        const testButton = document.querySelector('button[onclick="testEmailConfig()"]');
+        const originalTestText = testButton.innerHTML;
+        testButton.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>测试中...';
+        testButton.disabled = true;
+        
+        makeRequest('/api/save_email_config', 'POST', configData)
+            .then(response => {
+                if (response.success) {
+                    // 然后测试邮件
+                    showNotification(`正在向 ${emails.length} 个邮箱发送测试邮件...`, 'default');
+                    return makeRequest('/api/test_email', 'POST');
+                } else {
+                    throw new Error(response.message);
+                }
+            })
+            .then(response => {
+                if (response.success) {
+                    showNotification(response.message, 'default');
+                } else {
+                    showNotification(response.message, 'destructive');
+                }
+            })
+            .catch(error => {
+                showNotification('配置保存失败: ' + error.message, 'destructive');
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                testButton.innerHTML = originalTestText;
+                testButton.disabled = false;
+                lucide.createIcons();
+            });
+    }
+    
+    // 重置表单
+    function resetEmailForm() {
+        document.getElementById('emailConfigForm').reset();
+        updateEmailGuide();
+    }
+    
+    function resetStrategyForm() {
+        document.getElementById('techWeight').value = 0.65;
+        document.getElementById('auctionWeight').value = 0.35;
+        document.getElementById('scoreThreshold').value = 0.65;
+        document.getElementById('maxRecommendations').value = 15;
+        document.getElementById('minPrice').value = 2;
+        document.getElementById('maxPrice').value = 300;
+        updateWeightValues();
+        showNotification('已恢复默认策略参数', 'default');
+    }
+    
+    // 导出配置
+    function exportConfig() {
+        showNotification('导出功能开发中...', 'default');
+    }
+    
+    // 导入配置
+    function importConfig() {
+        showNotification('导入功能开发中...', 'default');
+    }
+    
+    // 自动保存到本地存储
+    function autoSaveConfig() {
+        const formData = new FormData(document.getElementById('emailConfigForm'));
+        const configData = {};
+        
+        // 处理普通字段
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'recipient_emails[]') {
+                configData[key] = value;
+            }
+        }
+        
+        // 处理多个邮箱地址
+        const emails = formData.getAll('recipient_emails[]').filter(email => email.trim() !== '');
+        configData.recipient_emails = emails.join(',');
+        
+        // 保存到本地存储
+        localStorage.setItem('cchan_email_config_draft', JSON.stringify(configData));
+    }
+    
+    // 从本地存储恢复配置
+    function restoreConfigFromDraft() {
+        const draft = localStorage.getItem('cchan_email_config_draft');
+        if (draft && !document.getElementById('senderEmail').value) {
+            try {
+                const configData = JSON.parse(draft);
+                if (configData.sender_email) {
+                    document.getElementById('senderEmail').value = configData.sender_email;
+                }
+                if (configData.email_provider) {
+                    document.getElementById('emailProvider').value = configData.email_provider;
+                    updateEmailGuide();
+                }
+                // 密码字段不从草稿恢复，出于安全考虑
+            } catch (e) {
+                console.log('恢复配置草稿失败:', e);
+            }
+        }
+    }
+    
+    // 添加输入监听器用于自动保存
+    function addAutoSaveListeners() {
+        const form = document.getElementById('emailConfigForm');
+        const inputs = form.querySelectorAll('input, select');
+        
+        inputs.forEach(input => {
+            input.addEventListener('input', debounce(autoSaveConfig, 1000));
+            input.addEventListener('change', autoSaveConfig);
+        });
+    }
+    
+    // 防抖函数
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // 成功保存后清除草稿
+    function clearConfigDraft() {
+        localStorage.removeItem('cchan_email_config_draft');
+    }
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        updateEmailGuide();
+        updateWeightValues();
+        updateRemoveButtons();
+        lucide.createIcons();
+        
+        // 恢复配置草稿
+        restoreConfigFromDraft();
+        
+        // 添加自动保存监听器
+        addAutoSaveListeners();
+    });
+</script>
+{% endblock %}

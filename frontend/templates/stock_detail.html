@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ stock.basic_info.code_name }} ({{ stock.symbol }}) - 深度分析报告</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #F8FAFC;
+            color: #1E293B;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px 16px 0 0;
+            margin-bottom: 24px;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .stock-title {
+            flex: 1;
+        }
+
+        .stock-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stock-code {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .stock-industry {
+            margin-top: 12px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.875rem;
+        }
+
+        .price-section {
+            text-align: right;
+        }
+
+        .current-price {
+            font-size: 3rem;
+            font-weight: 700;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .price-change {
+            font-size: 1.25rem;
+            margin-top: 8px;
+        }
+
+        .price-change.positive { color: #10B981; }
+        .price-change.negative { color: #EF4444; }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #E2E8F0;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rating-card {
+            text-align: center;
+            padding: 32px 24px;
+        }
+
+        .investment-rating {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .rating-recommend { color: #10B981; }
+        .rating-neutral { color: #F59E0B; }
+        .rating-caution { color: #EF4444; }
+
+        .confidence-level {
+            font-size: 1.125rem;
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+
+        .risk-assessment {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .risk-low { background: #D1FAE5; color: #065F46; }
+        .risk-medium { background: #FEF3C7; color: #92400E; }
+        .risk-high { background: #FEE2E2; color: #991B1B; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 16px;
+            background: #F8FAFC;
+            border-radius: 12px;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: #64748B;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 8px;
+            background: #E2E8F0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #EF4444 0%, #F59E0B 50%, #10B981 100%);
+            transition: width 0.3s ease;
+        }
+
+        .technical-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .indicator {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #F8FAFC;
+            border-radius: 8px;
+        }
+
+        .indicator-name {
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .indicator-value {
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .llm-analysis {
+            line-height: 1.8;
+            color: #374151;
+        }
+
+        .llm-analysis h3 {
+            color: #1F2937;
+            margin: 24px 0 12px 0;
+            font-size: 1.125rem;
+        }
+
+        .llm-analysis p {
+            margin-bottom: 16px;
+        }
+
+        .investment-suggestions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .suggestion-item {
+            padding: 16px;
+            border-left: 4px solid #3B82F6;
+            background: #F8FAFC;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .suggestion-label {
+            font-weight: 600;
+            color: #1E40AF;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-value {
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+
+        .capital-flow-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .flow-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .flow-positive { 
+            background: #F0FDF4; 
+            border-color: #10B981;
+            color: #065F46;
+        }
+
+        .flow-negative { 
+            background: #FEF2F2; 
+            border-color: #EF4444;
+            color: #991B1B;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #3B82F6;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover {
+            background: #2563EB;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 1200px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .stock-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .stock-name {
+                font-size: 2rem;
+            }
+            
+            .current-price {
+                font-size: 2.5rem;
+            }
+            
+            .investment-suggestions {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-button">
+            <i data-lucide="arrow-left"></i>
+            返回首页
+        </a>
+
+        <!-- 股票基础信息头部 -->
+        <div class="header">
+            <div class="stock-header">
+                <div class="stock-title">
+                    <div class="stock-name">{{ stock.basic_info.code_name }}</div>
+                    <div class="stock-code">{{ stock.symbol }}</div>
+                    <div class="stock-industry">{{ stock.basic_info.industry }} · {{ stock.basic_info.industry_classification }}</div>
+                </div>
+                <div class="price-section">
+                    <div class="current-price">¥{{ "%.2f"|format(stock.price_data.current_price) }}</div>
+                    <div class="price-change {{ 'positive' if stock.price_data.price_change_pct > 0 else 'negative' if stock.price_data.price_change_pct < 0 else '' }}">
+                        {{ "%+.2f"|format(stock.price_data.price_change) }} ({{ "%+.2f"|format(stock.price_data.price_change_pct) }}%)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="analysis-grid">
+            <!-- 主要内容区域 -->
+            <div class="main-content">
+                <!-- LLM深度分析 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="brain"></i>
+                        AI深度投研分析
+                    </div>
+                    <div class="llm-analysis">
+                        {{ stock.llm_analysis_text | safe }}
+                    </div>
+                </div>
+
+                <!-- 技术指标详情 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="trending-up"></i>
+                        技术指标分析
+                    </div>
+                    <div class="technical-indicators">
+                        <div class="indicator">
+                            <span class="indicator-name">MA5</span>
+                            <span class="indicator-value">¥{{ "%.2f"|format(stock.technical_indicators.ma5) }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">MA10</span>
+                            <span class="indicator-value">¥{{ "%.2f"|format(stock.technical_indicators.ma10) }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">MA20</span>
+                            <span class="indicator-value">¥{{ "%.2f"|format(stock.technical_indicators.ma20) }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">MA60</span>
+                            <span class="indicator-value">¥{{ "%.2f"|format(stock.technical_indicators.ma60) }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">RSI(14)</span>
+                            <span class="indicator-value">{{ "%.1f"|format(stock.technical_indicators.rsi_14) }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">MACD信号</span>
+                            <span class="indicator-value">{{ stock.technical_indicators.macd_signal }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">均线趋势</span>
+                            <span class="indicator-value">{{ stock.technical_indicators.ma_trend }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">布林带位置</span>
+                            <span class="indicator-value">{{ "%.2f"|format(stock.technical_indicators.bollinger_position) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 资金流向分析 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="dollar-sign"></i>
+                        资金流向分析
+                    </div>
+                    <div class="capital-flow-grid">
+                        <div class="flow-item {{ 'flow-positive' if stock.capital_flow.main_inflow > 0 else 'flow-negative' }}">
+                            <span>主力资金</span>
+                            <span>{{ "%+,.0f"|format(stock.capital_flow.main_inflow) }}万</span>
+                        </div>
+                        <div class="flow-item {{ 'flow-positive' if stock.capital_flow.retail_inflow > 0 else 'flow-negative' }}">
+                            <span>散户资金</span>
+                            <span>{{ "%+,.0f"|format(stock.capital_flow.retail_inflow) }}万</span>
+                        </div>
+                        <div class="flow-item {{ 'flow-positive' if stock.capital_flow.institutional_inflow > 0 else 'flow-negative' }}">
+                            <span>机构资金</span>
+                            <span>{{ "%+,.0f"|format(stock.capital_flow.institutional_inflow) }}万</span>
+                        </div>
+                        <div class="flow-item {{ 'flow-positive' if stock.capital_flow.net_inflow > 0 else 'flow-negative' }}">
+                            <span>净流入</span>
+                            <span>{{ "%+,.0f"|format(stock.capital_flow.net_inflow) }}万</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 投资建议 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="target"></i>
+                        专业投资建议
+                    </div>
+                    <div class="investment-suggestions">
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">最佳买入点</div>
+                            <div class="suggestion-value">{{ stock.buy_point }}</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">卖出策略</div>
+                            <div class="suggestion-value">{{ stock.sell_point }}</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">目标价位</div>
+                            <div class="suggestion-value">¥{{ "%.2f"|format(stock.target_price) }}</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">止损价位</div>
+                            <div class="suggestion-value">¥{{ "%.2f"|format(stock.stop_loss_price) }}</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">预期收益</div>
+                            <div class="suggestion-value">{{ "%.1f"|format(stock.expected_return_pct) }}%</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">持股周期</div>
+                            <div class="suggestion-value">{{ stock.holding_period_days }}天</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">建议仓位</div>
+                            <div class="suggestion-value">{{ "%.1f"|format(stock.position_suggestion) }}%</div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-label">风险等级</div>
+                            <div class="suggestion-value">{{ stock.risk_assessment }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <!-- 投资评级卡片 -->
+                <div class="card rating-card">
+                    <div class="investment-rating rating-{{ 'recommend' if '推荐' in stock.investment_rating else 'neutral' if '中性' in stock.investment_rating else 'caution' }}">
+                        {{ stock.investment_rating }}
+                    </div>
+                    <div class="confidence-level">信心等级: {{ stock.confidence_level }}</div>
+                    <div class="risk-assessment risk-{{ 'low' if '低风险' in stock.risk_assessment else 'high' if '高风险' in stock.risk_assessment else 'medium' }}">
+                        {{ stock.risk_assessment }}
+                    </div>
+                </div>
+
+                <!-- 综合评分 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="bar-chart"></i>
+                        综合评分
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">技术面</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.technical_score * 100) }}</div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: {{ stock.technical_score * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">基本面</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.fundamental_score * 100) }}</div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: {{ stock.fundamental_score * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">情感面</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.sentiment_score * 100) }}</div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: {{ stock.sentiment_score * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">综合评分</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.total_score * 100) }}</div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: {{ stock.total_score * 100 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 基本面数据 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="pie-chart"></i>
+                        基本面数据
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">PE比率</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.fundamental_data.pe_ratio) }}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">PB比率</div>
+                            <div class="metric-value">{{ "%.2f"|format(stock.fundamental_data.pb_ratio) }}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">ROE</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.fundamental_data.roe) }}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">负债率</div>
+                            <div class="metric-value">{{ "%.1f"|format(stock.fundamental_data.debt_ratio) }}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">营收增长</div>
+                            <div class="metric-value">{{ "%+.1f"|format(stock.fundamental_data.revenue_growth) }}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">利润增长</div>
+                            <div class="metric-value">{{ "%+.1f"|format(stock.fundamental_data.profit_growth) }}%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 竞价分析 -->
+                <div class="card">
+                    <div class="card-title">
+                        <i data-lucide="clock"></i>
+                        集合竞价分析
+                    </div>
+                    <div class="technical-indicators">
+                        <div class="indicator">
+                            <span class="indicator-name">竞价涨跌幅</span>
+                            <span class="indicator-value">{{ "%+.2f"|format(stock.auction_data.auction_ratio) }}%</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">竞价量比</span>
+                            <span class="indicator-value">{{ "%.2f"|format(stock.auction_data.auction_volume_ratio) }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">开盘类型</span>
+                            <span class="indicator-value">{{ stock.auction_data.gap_type }}</span>
+                        </div>
+                        <div class="indicator">
+                            <span class="indicator-name">市场情绪</span>
+                            <span class="indicator-value">{{ stock.auction_data.market_sentiment }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化Lucide图标
+        lucide.createIcons();
+        
+        // 添加一些交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 评分条动画
+            const scoreFills = document.querySelectorAll('.score-fill');
+            
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const fill = entry.target;
+                        const width = fill.style.width;
+                        fill.style.width = '0%';
+                        
+                        setTimeout(() => {
+                            fill.style.width = width;
+                        }, 100);
+                    }
+                });
+            }, observerOptions);
+            
+            scoreFills.forEach(fill => observer.observe(fill));
+        });
+    </script>
+</body>
+</html>

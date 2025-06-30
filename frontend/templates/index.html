@@ -1,0 +1,629 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - CChanTrader-AI 智能交易管理平台{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- 系统状态面板 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 系统运行状态 -->
+        <div class="card p-6 text-center hover-lift">
+            <div class="{% if system_status.scheduler_running %}status-running{% else %}status-stopped{% endif %} mb-4">
+                <i data-lucide="{% if system_status.scheduler_running %}play-circle{% else %}stop-circle{% endif %}" class="w-10 h-10 mx-auto"></i>
+            </div>
+            <h6 class="font-semibold mb-2">调度系统</h6>
+            <p class="text-sm mb-2">
+                {% if system_status.scheduler_running %}
+                    <span class="text-green-600">自动运行中</span>
+                {% else %}
+                    <span class="text-red-600">手动模式</span>
+                {% endif %}
+            </p>
+            {% if system_status.scheduler_recommended and not system_status.scheduler_running %}
+            <p class="text-xs text-blue-600 mb-3">💡 建议启动调度器</p>
+            {% endif %}
+            <button class="button button-sm {% if system_status.scheduler_running %}button-destructive{% else %}button-primary{% endif %}" 
+                    onclick="toggleScheduler()">
+                {% if system_status.scheduler_running %}停止调度{% else %}启动调度{% endif %}
+            </button>
+            {% if not system_status.scheduler_running %}
+            <p class="text-xs text-gray-500 mt-2">手动控制，避免意外执行</p>
+            {% endif %}
+        </div>
+        
+        <!-- 今日推荐 -->
+        <div class="card p-6 text-center hover-lift">
+            <div class="status-running mb-4">
+                <i data-lucide="star" class="w-10 h-10 mx-auto"></i>
+            </div>
+            <h6 class="font-semibold mb-2">今日推荐</h6>
+            <p class="text-sm mb-4">
+                <span class="text-2xl font-bold text-blue-600">{{ system_status.today_recommendations }}</span> 只股票
+            </p>
+            <button class="button button-sm button-primary" onclick="runAnalysis()">
+                立即分析
+            </button>
+        </div>
+        
+        <!-- 邮件状态 -->
+        <div class="card p-6 text-center hover-lift">
+            <div class="{% if system_status.email_configured %}status-running{% else %}status-warning{% endif %} mb-4">
+                <i data-lucide="mail" class="w-10 h-10 mx-auto"></i>
+            </div>
+            <h6 class="font-semibold mb-2">邮件配置</h6>
+            <p class="text-sm mb-4">
+                {% if system_status.email_configured %}
+                    <span class="text-green-600">已配置</span>
+                {% else %}
+                    <span class="text-yellow-600">未配置</span>
+                {% endif %}
+            </p>
+            <a href="{{ url_for('config') }}" class="button button-sm button-outline">
+                设置邮箱
+            </a>
+        </div>
+        
+        <!-- 最后更新 -->
+        <div class="card p-6 text-center hover-lift">
+            <div class="status-running mb-4">
+                <i data-lucide="refresh-cw" class="w-10 h-10 mx-auto"></i>
+            </div>
+            <h6 class="font-semibold mb-2">最后更新</h6>
+            <p class="text-sm mb-4 text-gray-600">{{ system_status.last_update }}</p>
+            <button class="button button-sm button-outline" onclick="refreshStatus()">
+                刷新状态
+            </button>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 今日重点推荐 -->
+        <div class="lg:col-span-2">
+            <div class="card">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h5 class="text-lg font-semibold flex items-center">
+                        <i data-lucide="trophy" class="w-5 h-5 text-yellow-500 mr-2"></i>
+                        今日重点推荐
+                    </h5>
+                    <a href="{{ url_for('recommendations') }}" class="button button-sm button-outline">
+                        查看全部 <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if recommendations %}
+                        <!-- 选股结果统计 -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600">{{ recommendations|length }}</div>
+                                <div class="text-xs text-gray-600">总推荐数</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">{{ recommendations|selectattr("confidence", "equalto", "very_high")|list|length }}</div>
+                                <div class="text-xs text-gray-600">强烈推荐</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-600">
+                                    {{ "%.3f"|format(recommendations|map(attribute='total_score')|sum / recommendations|length) }}
+                                </div>
+                                <div class="text-xs text-gray-600">平均评分</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-600">{{ recommendations|map(attribute='market')|unique|list|length }}</div>
+                                <div class="text-xs text-gray-600">涉及板块</div>
+                            </div>
+                        </div>
+
+                        <!-- 优先级分组显示 -->
+                        {% set very_high_stocks = recommendations|selectattr("confidence", "equalto", "very_high")|list %}
+                        {% set high_stocks = recommendations|selectattr("confidence", "equalto", "high")|list %}
+                        {% set medium_stocks = recommendations|selectattr("confidence", "equalto", "medium")|list %}
+
+                        {% if very_high_stocks %}
+                        <div class="mb-6">
+                            <div class="flex items-center mb-3">
+                                <i data-lucide="star" class="w-5 h-5 text-yellow-500 mr-2"></i>
+                                <h3 class="text-lg font-semibold text-green-600">重点关注 ({{ very_high_stocks|length }}只)</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {% for stock in very_high_stocks %}
+                                <div class="card stock-card high-confidence hover-lift border-l-4 border-l-green-500">
+                                    <div class="p-4">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h6 class="font-semibold text-lg">{{ stock.symbol }}</h6>
+                                                <p class="text-sm text-gray-600">{{ stock.stock_name }}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="score">{{ "%.3f"|format(stock.total_score) }}</span>
+                                                <div class="text-xs text-green-600 font-semibold mt-1">强烈推荐</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex justify-between items-center mb-3">
+                                            <div class="price">¥{{ "%.2f"|format(stock.current_price) }}</div>
+                                            <span class="badge badge-secondary">{{ stock.market }}</span>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-3 gap-2 text-center text-sm mb-3">
+                                            <div>
+                                                <p class="text-gray-600 text-xs">竞价</p>
+                                                <p class="{% if stock.auction_ratio > 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                                    {{ "%+.1f"|format(stock.auction_ratio) }}%
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p class="text-gray-600 text-xs">目标价</p>
+                                                <p class="text-green-600 font-semibold">¥{{ "%.2f"|format(stock.target_price) }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-gray-600 text-xs">止损价</p>
+                                                <p class="text-red-600 font-semibold">¥{{ "%.2f"|format(stock.stop_loss) }}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <p class="text-xs text-gray-600 bg-gray-50 p-2 rounded">{{ stock.strategy }}</p>
+                                        </div>
+                                        
+                                        <div class="flex space-x-2">
+                                            <button class="button button-sm button-primary flex-1" onclick="addToWatchlist('{{ stock.symbol }}')">
+                                                <i data-lucide="eye" class="w-3 h-3 mr-1"></i>关注
+                                            </button>
+                                            <button class="button button-sm button-outline" onclick="showStockDetail('{{ stock.symbol }}')">
+                                                详情
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if high_stocks %}
+                        <div class="mb-6">
+                            <div class="flex items-center mb-3">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-blue-500 mr-2"></i>
+                                <h3 class="text-lg font-semibold text-blue-600">值得关注 ({{ high_stocks|length }}只)</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                {% for stock in high_stocks %}
+                                <div class="card stock-card medium-confidence hover-lift border-l-4 border-l-blue-500">
+                                    <div class="p-3">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h6 class="font-semibold">{{ stock.symbol }}</h6>
+                                                <p class="text-xs text-gray-600">{{ stock.stock_name }}</p>
+                                            </div>
+                                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{{ "%.3f"|format(stock.total_score) }}</span>
+                                        </div>
+                                        
+                                        <div class="flex justify-between items-center mb-2">
+                                            <div class="text-sm font-semibold">¥{{ "%.2f"|format(stock.current_price) }}</div>
+                                            <span class="text-xs {% if stock.auction_ratio > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                                {{ "%+.1f"|format(stock.auction_ratio) }}%
+                                            </span>
+                                        </div>
+                                        
+                                        <button class="w-full button button-sm button-outline" onclick="addToWatchlist('{{ stock.symbol }}')">
+                                            <i data-lucide="plus" class="w-3 h-3 mr-1"></i>加入关注
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if medium_stocks and medium_stocks|length > 0 %}
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <i data-lucide="bar-chart" class="w-5 h-5 text-gray-500 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-600">其他机会 ({{ medium_stocks|length }}只)</h3>
+                                </div>
+                                <button class="button button-sm button-ghost" onclick="toggleOtherStocks()">
+                                    <span id="toggleText">展开查看</span>
+                                    <i data-lucide="chevron-down" id="toggleIcon" class="w-4 h-4 ml-1"></i>
+                                </button>
+                            </div>
+                            <div id="otherStocksContainer" class="hidden">
+                                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                    {% for stock in medium_stocks %}
+                                    <div class="card p-2 text-center hover-lift">
+                                        <div class="text-sm font-semibold">{{ stock.symbol }}</div>
+                                        <div class="text-xs text-gray-600 truncate">{{ stock.stock_name }}</div>
+                                        <div class="text-xs font-semibold mt-1">¥{{ "%.2f"|format(stock.current_price) }}</div>
+                                        <div class="text-xs {% if stock.auction_ratio > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                            {{ "%+.1f"|format(stock.auction_ratio) }}%
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-8">
+                            <i data-lucide="inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                            <h6 class="text-gray-600 font-semibold mb-2">暂无推荐股票</h6>
+                            <p class="text-gray-500 mb-4">点击"立即分析"开始股票筛选</p>
+                            <button class="button button-primary" onclick="runAnalysis()">
+                                <i data-lucide="play" class="w-4 h-4 mr-2"></i>开始分析
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 系统信息面板 -->
+        <div class="space-y-4">
+            <!-- 实时时钟 -->
+            <div class="card">
+                <div class="p-4 border-b">
+                    <h6 class="font-semibold flex items-center">
+                        <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
+                        交易时间
+                    </h6>
+                </div>
+                <div class="p-6 text-center">
+                    <div id="trading-clock">
+                        <div class="text-xl font-semibold text-blue-600 mb-2" id="current-date"></div>
+                        <div class="text-3xl font-bold text-gray-900 mb-4" id="current-time-large"></div>
+                        <div>
+                            <span id="market-status" class="badge badge-secondary">市场状态检测中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 快速操作 -->
+            <div class="card">
+                <div class="p-4 border-b">
+                    <h6 class="font-semibold flex items-center">
+                        <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                        快速操作
+                    </h6>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-2">
+                        <button class="w-full button button-primary" onclick="runAnalysis()">
+                            <i data-lucide="trending-up" class="w-4 h-4 mr-2"></i>立即分析
+                        </button>
+                        <button class="w-full button button-outline" onclick="testEmail()">
+                            <i data-lucide="send" class="w-4 h-4 mr-2"></i>测试邮件
+                        </button>
+                        <button class="w-full button button-outline" onclick="refreshStatus()">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>刷新状态
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统提示 -->
+            <div class="card">
+                <div class="p-4 border-b">
+                    <h6 class="font-semibold flex items-center">
+                        <i data-lucide="lightbulb" class="w-4 h-4 mr-2"></i>
+                        系统提示
+                    </h6>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="alert alert-default">
+                        <div class="flex items-start">
+                            <i data-lucide="info" class="w-4 h-4 mr-2 mt-0.5 text-blue-500"></i>
+                            <p class="text-sm">交易日 9:25-9:29 系统会自动分析并发送邮件推荐</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-default">
+                        <div class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 mr-2 mt-0.5 text-yellow-500"></i>
+                            <p class="text-sm">投资有风险，决策需谨慎。本系统仅供参考，不构成投资建议</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 更新大时钟
+    function updateLargeClock() {
+        const now = new Date();
+        const dateString = now.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long'
+        });
+        const timeString = now.toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        document.getElementById('current-date').textContent = dateString;
+        document.getElementById('current-time-large').textContent = timeString;
+        
+        // 更新市场状态
+        updateMarketStatus(now);
+    }
+    
+    // 更新市场状态
+    function updateMarketStatus(now) {
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const weekday = now.getDay();
+        const statusElement = document.getElementById('market-status');
+        
+        // 简化的市场状态判断
+        if (weekday === 0 || weekday === 6) {
+            statusElement.textContent = '休市';
+            statusElement.className = 'badge bg-secondary';
+        } else if ((hour === 9 && minute >= 15 && minute <= 25)) {
+            statusElement.textContent = '集合竞价';
+            statusElement.className = 'badge bg-warning';
+        } else if ((hour === 9 && minute >= 30) || (hour >= 10 && hour < 11) || 
+                   (hour === 11 && minute < 30) || (hour === 13) || 
+                   (hour === 14) || (hour === 15 && minute === 0)) {
+            statusElement.textContent = '交易中';
+            statusElement.className = 'badge bg-success';
+        } else {
+            statusElement.textContent = '休市';
+            statusElement.className = 'badge bg-secondary';
+        }
+    }
+    
+    // 启动/停止调度器
+    function toggleScheduler() {
+        const isRunning = {{ 'true' if system_status.scheduler_running else 'false' }};
+        const url = isRunning ? '/api/stop_scheduler' : '/api/start_scheduler';
+        const action = isRunning ? '停止' : '启动';
+        
+        makeRequest(url, 'POST')
+            .then(response => {
+                if (response.success) {
+                    showNotification(response.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(response.message, 'danger');
+                }
+            });
+    }
+    
+    // 运行分析
+    function runAnalysis() {
+        // 开始分析前的UI更新
+        showAnalysisProgress('准备中...', 0);
+        
+        // 禁用所有分析按钮
+        const analysisButtons = document.querySelectorAll('button[onclick="runAnalysis()"]');
+        analysisButtons.forEach(btn => {
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>分析中...';
+            btn.setAttribute('data-original-text', originalText);
+        });
+        
+        // 显示分析状态
+        showNotification('🔍 开始执行股票分析...', 'info');
+        
+        // 模拟分析进度
+        let progress = 10;
+        const progressInterval = setInterval(() => {
+            if (progress < 90) {
+                progress += Math.random() * 20;
+                showAnalysisProgress(`分析中... ${Math.min(90, Math.round(progress))}%`, Math.min(90, progress));
+            }
+        }, 500);
+        
+        makeRequest('/api/run_analysis', 'POST')
+            .then(response => {
+                clearInterval(progressInterval);
+                
+                if (response.success) {
+                    // 完成进度
+                    showAnalysisProgress('分析完成！', 100);
+                    
+                    // 显示详细的分析结果
+                    let detailedMessage = response.message;
+                    if (response.data) {
+                        const data = response.data;
+                        detailedMessage += `\n📈 平均评分: ${data.average_score}`;
+                        if (data.low_price_count > 0) {
+                            detailedMessage += `\n💰 包含 ${data.low_price_count} 只低价机会股`;
+                        }
+                    }
+                    
+                    showNotification(detailedMessage, 'success');
+                    
+                    // 延迟更新推荐内容，给用户看到完成状态
+                    setTimeout(() => {
+                        updateRecommendations(response.data);
+                        hideAnalysisProgress();
+                    }, 1500);
+                } else {
+                    showAnalysisProgress('分析失败', 0);
+                    showNotification(`❌ ${response.message}`, 'danger');
+                    setTimeout(() => hideAnalysisProgress(), 2000);
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                showAnalysisProgress('分析失败', 0);
+                showNotification('❌ 分析请求失败，请检查网络连接', 'danger');
+                setTimeout(() => hideAnalysisProgress(), 2000);
+            })
+            .finally(() => {
+                // 恢复分析按钮
+                setTimeout(() => {
+                    analysisButtons.forEach(btn => {
+                        btn.disabled = false;
+                        const originalText = btn.getAttribute('data-original-text');
+                        if (originalText) {
+                            btn.innerHTML = originalText;
+                            btn.removeAttribute('data-original-text');
+                        }
+                        lucide.createIcons();
+                    });
+                }, 2000);
+            });
+    }
+    
+    // 显示分析进度
+    function showAnalysisProgress(message, percentage) {
+        let progressBar = document.getElementById('analysis-progress-bar');
+        if (!progressBar) {
+            // 创建进度条元素
+            const progressContainer = document.createElement('div');
+            progressContainer.id = 'analysis-progress-container';
+            progressContainer.className = 'fixed top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-80';
+            progressContainer.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <i data-lucide="activity" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-sm font-medium text-gray-900" id="analysis-progress-text">${message}</div>
+                        <div class="mt-2">
+                            <div class="bg-gray-200 rounded-full h-2">
+                                <div id="analysis-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1" id="analysis-progress-percentage">${Math.round(percentage)}%</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(progressContainer);
+            lucide.createIcons();
+        } else {
+            // 更新现有进度条
+            document.getElementById('analysis-progress-text').textContent = message;
+            progressBar.style.width = percentage + '%';
+            document.getElementById('analysis-progress-percentage').textContent = Math.round(percentage) + '%';
+        }
+    }
+    
+    // 隐藏分析进度
+    function hideAnalysisProgress() {
+        const progressContainer = document.getElementById('analysis-progress-container');
+        if (progressContainer) {
+            progressContainer.remove();
+        }
+    }
+    
+    // 更新推荐内容（不重新加载整个页面）
+    function updateRecommendations(analysisData = null) {
+        makeRequest('/api/system_status')
+            .then(status => {
+                if (!status.error) {
+                    // 更新今日推荐数量
+                    const recommendationCountElement = document.querySelector('.text-2xl.font-bold.text-blue-600');
+                    if (recommendationCountElement && status.today_recommendations) {
+                        recommendationCountElement.textContent = status.today_recommendations;
+                        
+                        // 添加动画效果
+                        recommendationCountElement.classList.add('animate-pulse');
+                        setTimeout(() => {
+                            recommendationCountElement.classList.remove('animate-pulse');
+                        }, 2000);
+                    }
+                    
+                    // 显示详细的更新成功消息
+                    let updateMessage = `📊 推荐已更新，共找到 ${status.today_recommendations} 只股票`;
+                    if (analysisData) {
+                        if (analysisData.high_confidence_count > 0) {
+                            updateMessage += `，强烈推荐 ${analysisData.high_confidence_count} 只`;
+                        }
+                        if (analysisData.low_price_count > 0) {
+                            updateMessage += `，低价机会 ${analysisData.low_price_count} 只`;
+                        }
+                    }
+                    
+                    showNotification(updateMessage, 'success');
+                    
+                    // 3秒后刷新页面以显示新推荐
+                    setTimeout(() => {
+                        showNotification('🔄 正在加载最新推荐...', 'info');
+                        location.reload();
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                showNotification('状态更新失败，将直接刷新页面', 'warning');
+                setTimeout(() => location.reload(), 2000);
+            });
+    }
+    
+    // 测试邮件
+    function testEmail() {
+        showNotification('正在发送测试邮件...', 'info');
+        
+        makeRequest('/api/test_email', 'POST')
+            .then(response => {
+                if (response.success) {
+                    showNotification(response.message, 'success');
+                } else {
+                    showNotification(response.message, 'danger');
+                }
+            });
+    }
+    
+    // 刷新状态
+    function refreshStatus() {
+        makeRequest('/api/system_status')
+            .then(response => {
+                if (!response.error) {
+                    showNotification('状态已刷新', 'info');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showNotification('刷新失败: ' + response.error, 'danger');
+                }
+            });
+    }
+    
+    // 切换其他股票显示
+    function toggleOtherStocks() {
+        const container = document.getElementById('otherStocksContainer');
+        const toggleText = document.getElementById('toggleText');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            toggleText.textContent = '收起';
+            toggleIcon.setAttribute('data-lucide', 'chevron-up');
+        } else {
+            container.classList.add('hidden');
+            toggleText.textContent = '展开查看';
+            toggleIcon.setAttribute('data-lucide', 'chevron-down');
+        }
+        lucide.createIcons();
+    }
+    
+    // 添加到关注列表
+    function addToWatchlist(symbol) {
+        // 这里可以实现添加到自选股的功能
+        showNotification(`已将 ${symbol} 添加到关注列表`, 'default');
+        
+        // 可以调用API保存到服务器
+        // makeRequest('/api/add_to_watchlist', 'POST', { symbol: symbol })
+    }
+    
+    // 显示股票详情（简化版）
+    function showStockDetail(symbol) {
+        // 跳转到推荐页面并显示该股票详情
+        window.location.href = `/recommendations#${symbol}`;
+    }
+
+    // 每秒更新大时钟
+    setInterval(updateLargeClock, 1000);
+    updateLargeClock();
+    
+    // 每30秒自动刷新系统状态
+    setInterval(refreshStatus, 30000);
+</script>
+{% endblock %}

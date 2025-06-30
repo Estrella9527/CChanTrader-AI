@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+
+{% block title %}股票推荐 - CChanTrader-AI 智能交易管理平台{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- 页面标题 -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight">股票推荐中心</h1>
+            <p class="text-gray-600 mt-2">基于智能算法的股票推荐与分析</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="button button-primary" onclick="runAnalysis()">
+                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>刷新分析
+            </button>
+            <div class="flex border rounded-lg p-1">
+                <button class="px-3 py-1 rounded text-sm bg-blue-100 text-blue-700" onclick="switchView('table')" id="tableViewBtn">
+                    <i data-lucide="table" class="w-4 h-4"></i>
+                </button>
+                <button class="px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100" onclick="switchView('card')" id="cardViewBtn">
+                    <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选工具栏 -->
+    <div class="card">
+        <div class="p-6 border-b">
+            <h3 class="text-lg font-semibold mb-4">筛选条件</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">日期筛选</label>
+                    <input type="date" class="input" id="dateFilter" name="date" value="{{ current_date }}">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">市场</label>
+                    <select class="select" id="marketFilter">
+                        <option value="">全部市场</option>
+                        <option value="上海主板">上海主板</option>
+                        <option value="深圳主板">深圳主板</option>
+                        <option value="中小板">中小板</option>
+                        <option value="创业板">创业板</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">信心等级</label>
+                    <select class="select" id="confidenceFilter">
+                        <option value="">全部等级</option>
+                        <option value="very_high">非常高</option>
+                        <option value="high">高</option>
+                        <option value="medium">中等</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">搜索股票</label>
+                    <input type="text" class="input" id="searchInput" placeholder="股票代码或名称">
+                </div>
+                
+                <div class="flex items-end space-x-2">
+                    <button class="button button-outline" onclick="applyFilters()">
+                        <i data-lucide="filter" class="w-4 h-4 mr-1"></i>筛选
+                    </button>
+                    <button class="button button-ghost" onclick="clearFilters()">
+                        <i data-lucide="x" class="w-4 h-4 mr-1"></i>清除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据统计 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card p-6 text-center">
+            <div class="text-3xl font-bold text-blue-600 mb-2" id="totalCount">{{ recommendations|length }}</div>
+            <p class="text-sm text-gray-600">推荐总数</p>
+        </div>
+        <div class="card p-6 text-center">
+            <div class="text-3xl font-bold text-green-600 mb-2" id="highConfidenceCount">
+                {{ recommendations|selectattr("confidence", "equalto", "very_high")|list|length }}
+            </div>
+            <p class="text-sm text-gray-600">强烈推荐</p>
+        </div>
+        <div class="card p-6 text-center">
+            <div class="text-3xl font-bold text-purple-600 mb-2" id="avgScore">
+                {% if recommendations %}
+                    {{ "%.3f"|format(recommendations|map(attribute='total_score')|sum / recommendations|length) }}
+                {% else %}
+                    0.000
+                {% endif %}
+            </div>
+            <p class="text-sm text-gray-600">平均评分</p>
+        </div>
+        <div class="card p-6 text-center">
+            <div class="text-3xl font-bold text-orange-600 mb-2" id="marketCount">
+                {{ recommendations|map(attribute='market')|unique|list|length }}
+            </div>
+            <p class="text-sm text-gray-600">覆盖市场</p>
+        </div>
+    </div>
+
+    <!-- 表格视图 -->
+    <div class="card" id="tableView">
+        {% if recommendations %}
+        <div class="overflow-x-auto">
+            <table class="w-full" id="stockTable">
+                <thead class="border-b">
+                    <tr class="text-left">
+                        <th class="p-4 font-semibold">股票代码</th>
+                        <th class="p-4 font-semibold">股票名称</th>
+                        <th class="p-4 font-semibold">市场</th>
+                        <th class="p-4 font-semibold">当前价格</th>
+                        <th class="p-4 font-semibold">综合评分</th>
+                        <th class="p-4 font-semibold">竞价比率</th>
+                        <th class="p-4 font-semibold">信心等级</th>
+                        <th class="p-4 font-semibold">建议策略</th>
+                        <th class="p-4 font-semibold">策略解释</th>
+                        <th class="p-4 font-semibold">状态</th>
+                        <th class="p-4 font-semibold">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in recommendations %}
+                    <tr class="border-b hover:bg-gray-50" data-stock-id="{{ stock.id }}">
+                        <td class="p-4">
+                            <span class="font-mono text-sm">{{ stock.symbol }}</span>
+                        </td>
+                        <td class="p-4 font-medium">{{ stock.stock_name or '未知' }}</td>
+                        <td class="p-4">
+                            <span class="badge badge-secondary">{{ stock.market }}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="price">¥{{ "%.2f"|format(stock.current_price) }}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="score">{{ "%.3f"|format(stock.total_score) }}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="{% if stock.auction_ratio > 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                {{ "%+.1f"|format(stock.auction_ratio) }}%
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <span class="badge {% if stock.confidence == 'very_high' %}badge-default{% elif stock.confidence == 'high' %}badge-secondary{% else %}badge-outline{% endif %}">
+                                {% if stock.confidence == 'very_high' %}非常高
+                                {% elif stock.confidence == 'high' %}高
+                                {% else %}中等{% endif %}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <p class="text-sm text-gray-600 max-w-xs">{{ stock.strategy }}</p>
+                        </td>
+                        <td class="p-4">
+                            <div class="max-w-xs">
+                                <p class="text-xs text-gray-500 truncate">{{ stock.explanation or '暂无解释' }}</p>
+                                <button 
+                                    class="text-indigo-600 hover:text-indigo-800 underline text-xs mt-1 transition-colors" 
+                                    onclick="openStockModal('{{ stock.symbol }}')"
+                                >查看</button>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <select class="select text-sm py-1 px-2 h-8" onchange="updateStockStatus({{ stock.id }}, this.value)">
+                                <option value="pending" {% if stock.status == 'pending' %}selected{% endif %}>待决策</option>
+                                <option value="bought" {% if stock.status == 'bought' %}selected{% endif %}>已买入</option>
+                                <option value="watching" {% if stock.status == 'watching' %}selected{% endif %}>观察中</option>
+                                <option value="ignored" {% if stock.status == 'ignored' %}selected{% endif %}>已忽略</option>
+                            </select>
+                        </td>
+                        <td class="p-4">
+                            <button class="button button-sm button-outline" onclick="showStockDetail('{{ stock.symbol }}')">
+                                详情
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i data-lucide="search" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+            <h6 class="text-gray-600 font-semibold mb-2">暂无推荐数据</h6>
+            <p class="text-gray-500 mb-4">选择日期或点击"刷新分析"获取最新推荐</p>
+            <button class="button button-primary" onclick="runAnalysis()">
+                <i data-lucide="trending-up" class="w-4 h-4 mr-2"></i>开始分析
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 卡片视图 -->
+    <div class="hidden" id="cardView">
+        {% if recommendations %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stockCards">
+            {% for stock in recommendations %}
+            <div class="card stock-card {% if stock.confidence == 'very_high' %}high-confidence{% elif stock.confidence == 'high' %}medium-confidence{% endif %} hover-lift">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h6 class="font-semibold text-lg">{{ stock.symbol }}</h6>
+                            <p class="text-sm text-gray-600">{{ stock.stock_name or '未知股票' }}</p>
+                        </div>
+                        <span class="score">{{ "%.3f"|format(stock.total_score) }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="price">¥{{ "%.2f"|format(stock.current_price) }}</div>
+                        <span class="badge badge-secondary">{{ stock.market }}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 text-center text-sm mb-4">
+                        <div>
+                            <p class="text-gray-600 text-xs mb-1">竞价</p>
+                            <p class="{% if stock.auction_ratio > 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                {{ "%+.1f"|format(stock.auction_ratio) }}%
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-xs mb-1">目标</p>
+                            <p class="text-green-600 font-semibold">¥{{ "%.2f"|format(stock.target_price) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-xs mb-1">止损</p>
+                            <p class="text-red-600 font-semibold">¥{{ "%.2f"|format(stock.stop_loss) }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-xs text-gray-600">{{ stock.strategy }}</p>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button class="button button-sm button-outline flex-1" onclick="showStockDetail('{{ stock.symbol }}')">
+                            详情
+                        </button>
+                        <select class="select text-xs py-1 px-2 w-24" onchange="updateStockStatus({{ stock.id }}, this.value)">
+                            <option value="pending" {% if stock.status == 'pending' %}selected{% endif %}>待决策</option>
+                            <option value="bought" {% if stock.status == 'bought' %}selected{% endif %}>已买入</option>
+                            <option value="watching" {% if stock.status == 'watching' %}selected{% endif %}>观察</option>
+                            <option value="ignored" {% if stock.status == 'ignored' %}selected{% endif %}>忽略</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 股票详情模态框 -->
+<div id="stockDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b">
+            <h3 class="text-xl font-semibold">股票详细分析</h3>
+            <button class="text-gray-400 hover:text-gray-600" onclick="closeStockDetailModal()">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="p-6" id="stockDetailContent">
+            <!-- 详情内容将通过JavaScript动态加载 -->
+        </div>
+        <div class="flex justify-end space-x-3 p-6 border-t">
+            <button class="button button-outline" onclick="closeStockDetailModal()">关闭</button>
+            <button class="button button-primary">加入自选</button>
+        </div>
+    </div>
+</div>
+
+<!-- >>> CChanTrader-AI Explain Patch : 策略解释模态框 -->
+<div id="explanationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg w-full max-w-3xl mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b">
+            <div>
+                <h3 class="text-xl font-semibold" id="explanationModalTitle">策略解释</h3>
+                <p class="text-sm text-gray-600 mt-1" id="explanationModalSubtitle">详细投资分析</p>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600" onclick="closeExplanationModal()">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="p-6" id="explanationModalContent">
+            <!-- 策略解释内容 -->
+            <div class="space-y-6">
+                <!-- 基本信息 -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-blue-900 mb-2">📊 基本信息</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><span class="text-gray-600">股票代码：</span><span class="font-mono" id="exp_symbol">-</span></div>
+                        <div><span class="text-gray-600">当前价格：</span><span class="font-semibold" id="exp_price">-</span></div>
+                        <div><span class="text-gray-600">信心等级：</span><span class="badge" id="exp_confidence">-</span></div>
+                        <div><span class="text-gray-600">综合评分：</span><span class="font-semibold" id="exp_score">-</span></div>
+                    </div>
+                </div>
+                
+                <!-- 推荐理由 -->
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-green-900 mb-2">🎯 推荐理由</h4>
+                    <p class="text-gray-700" id="exp_reason">加载中...</p>
+                </div>
+                
+                <!-- 买卖策略 -->
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-orange-900 mb-2">📈 买卖策略</h4>
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <span class="font-semibold text-green-600">买入建议：</span>
+                            <p class="text-gray-700 mt-1" id="exp_buy_point">-</p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-red-600">卖出策略：</span>
+                            <p class="text-gray-700 mt-1" id="exp_sell_logic">-</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 风险收益 -->
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-900 mb-2">⚖️ 风险收益分析</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><span class="text-gray-600">入场价位：</span><span class="font-semibold" id="exp_entry">-</span></div>
+                        <div><span class="text-gray-600">止损价位：</span><span class="font-semibold text-red-600" id="exp_stop_loss">-</span></div>
+                        <div><span class="text-gray-600">目标区间：</span><span class="font-semibold text-green-600" id="exp_target">-</span></div>
+                        <div><span class="text-gray-600">风险收益比：</span><span class="font-semibold" id="exp_rr">-</span></div>
+                    </div>
+                    <div class="mt-3">
+                        <p class="text-gray-700 text-sm" id="exp_risk_analysis">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end space-x-3 p-6 border-t">
+            <button class="button button-outline" onclick="closeExplanationModal()">关闭</button>
+            <button class="button button-primary" onclick="addToWatchlist()">加入自选</button>
+        </div>
+    </div>
+</div>
+
+{# === 优化版玻璃卡片 Modal 组件 === #}
+<div id="pickModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <!-- 背景遮罩 -->
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+         onclick="closeStockModal()"></div>
+
+    <!-- 模态框内容 - 更新样式为 bg-white/95 + rounded-3xl + drop-shadow-xl -->
+    <div class="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-white/95 backdrop-blur-lg rounded-3xl drop-shadow-xl border border-white/30 overflow-hidden">
+        <!-- 关闭按钮 -->
+        <button class="absolute top-6 right-6 text-gray-400 hover:text-gray-700 text-2xl z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/70 hover:bg-white/90 transition-all shadow-lg"
+                onclick="closeStockModal()">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        
+        <!-- 模态框主体 -->
+        <div id="pickModalBody" class="p-8 max-h-[80vh] overflow-y-auto text-sm text-gray-700">
+            <!-- 骨架屏加载状态 -->
+            <div id="modalSkeleton" class="space-y-6 animate-pulse">
+                <!-- 标题骨架 -->
+                <div class="flex items-center justify-between">
+                    <div class="space-y-2">
+                        <div class="h-6 bg-gray-200 rounded w-32"></div>
+                        <div class="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                    <div class="h-8 bg-gray-200 rounded w-20"></div>
+                </div>
+                
+                <!-- 卡片骨架 -->
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div class="h-6 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded w-12 mx-auto"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="h-6 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded w-12 mx-auto"></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="h-6 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded w-12 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 内容骨架 -->
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-xl">
+                        <div class="h-5 bg-gray-200 rounded w-20 mb-3"></div>
+                        <div class="space-y-2">
+                            <div class="h-4 bg-gray-200 rounded"></div>
+                            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-5 rounded-xl">
+                        <div class="h-5 bg-gray-200 rounded w-24 mb-3"></div>
+                        <div class="space-y-2">
+                            <div class="h-4 bg-gray-200 rounded"></div>
+                            <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图表骨架 -->
+                    <div class="bg-white p-5 rounded-xl">
+                        <div class="h-5 bg-gray-200 rounded w-16 mb-3"></div>
+                        <div class="h-32 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentView = 'table';
+    let allStocks = {{ recommendations|tojson }};
+    let filteredStocks = [...allStocks];
+    
+    // 切换视图
+    function switchView(view) {
+        currentView = view;
+        
+        // 更新按钮状态
+        const tableBtn = document.getElementById('tableViewBtn');
+        const cardBtn = document.getElementById('cardViewBtn');
+        
+        if (view === 'table') {
+            tableBtn.className = 'px-3 py-1 rounded text-sm bg-blue-100 text-blue-700';
+            cardBtn.className = 'px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100';
+            document.getElementById('tableView').classList.remove('hidden');
+            document.getElementById('cardView').classList.add('hidden');
+        } else {
+            tableBtn.className = 'px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100';
+            cardBtn.className = 'px-3 py-1 rounded text-sm bg-blue-100 text-blue-700';
+            document.getElementById('tableView').classList.add('hidden');
+            document.getElementById('cardView').classList.remove('hidden');
+        }
+    }
+    
+    // 应用筛选
+    function applyFilters() {
+        const market = document.getElementById('marketFilter').value;
+        const confidence = document.getElementById('confidenceFilter').value;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const date = document.getElementById('dateFilter').value;
+        
+        // 如果日期改变，重新加载数据
+        if (date !== '{{ current_date }}') {
+            window.location.href = `{{ url_for('recommendations') }}?date=${date}`;
+            return;
+        }
+        
+        filteredStocks = allStocks.filter(stock => {
+            let match = true;
+            
+            if (market && stock.market !== market) match = false;
+            if (confidence && stock.confidence !== confidence) match = false;
+            if (search && !stock.symbol.toLowerCase().includes(search) && 
+                !stock.stock_name.toLowerCase().includes(search)) match = false;
+            
+            return match;
+        });
+        
+        updateDisplay();
+        updateStats();
+    }
+    
+    // 清除筛选
+    function clearFilters() {
+        document.getElementById('marketFilter').value = '';
+        document.getElementById('confidenceFilter').value = '';
+        document.getElementById('searchInput').value = '';
+        
+        filteredStocks = [...allStocks];
+        updateDisplay();
+        updateStats();
+    }
+    
+    // 更新显示
+    function updateDisplay() {
+        if (currentView === 'table') {
+            updateTableDisplay();
+        } else {
+            updateCardDisplay();
+        }
+    }
+    
+    // 更新表格显示
+    function updateTableDisplay() {
+        const tbody = document.querySelector('#stockTable tbody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        filteredStocks.forEach(stock => {
+            const row = createTableRow(stock);
+            tbody.appendChild(row);
+        });
+    }
+    
+    // 更新卡片显示
+    function updateCardDisplay() {
+        const container = document.getElementById('stockCards');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        filteredStocks.forEach(stock => {
+            const card = createStockCard(stock);
+            container.appendChild(card);
+        });
+    }
+    
+    // 创建表格行
+    function createTableRow(stock) {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-gray-50';
+        row.dataset.stockId = stock.id;
+        
+        const confidenceMap = {
+            'very_high': { text: '非常高', class: 'badge-default' },
+            'high': { text: '高', class: 'badge-secondary' },
+            'medium': { text: '中等', class: 'badge-outline' }
+        };
+        
+        const confidence = confidenceMap[stock.confidence] || { text: '中等', class: 'badge-outline' };
+        
+        row.innerHTML = `
+            <td class="p-4"><span class="font-mono text-sm">${stock.symbol}</span></td>
+            <td class="p-4 font-medium">${stock.stock_name || '未知'}</td>
+            <td class="p-4"><span class="badge badge-secondary">${stock.market}</span></td>
+            <td class="p-4"><span class="price">¥${stock.current_price.toFixed(2)}</span></td>
+            <td class="p-4"><span class="score">${stock.total_score.toFixed(3)}</span></td>
+            <td class="p-4"><span class="${stock.auction_ratio > 0 ? 'text-green-600' : 'text-red-600'} font-semibold">${stock.auction_ratio > 0 ? '+' : ''}${stock.auction_ratio.toFixed(1)}%</span></td>
+            <td class="p-4"><span class="badge ${confidence.class}">${confidence.text}</span></td>
+            <td class="p-4"><p class="text-sm text-gray-600 max-w-xs">${stock.strategy}</p></td>
+            <td class="p-4">
+                <select class="select text-sm py-1 px-2 h-8" onchange="updateStockStatus(${stock.id}, this.value)">
+                    <option value="pending" ${stock.status === 'pending' ? 'selected' : ''}>待决策</option>
+                    <option value="bought" ${stock.status === 'bought' ? 'selected' : ''}>已买入</option>
+                    <option value="watching" ${stock.status === 'watching' ? 'selected' : ''}>观察中</option>
+                    <option value="ignored" ${stock.status === 'ignored' ? 'selected' : ''}>已忽略</option>
+                </select>
+            </td>
+            <td class="p-4">
+                <button class="button button-sm button-outline" onclick="showStockDetail('${stock.symbol}')">详情</button>
+            </td>
+        `;
+        
+        return row;
+    }
+    
+    // 创建股票卡片
+    function createStockCard(stock) {
+        const div = document.createElement('div');
+        
+        const confidenceClass = stock.confidence === 'very_high' ? 'high-confidence' : 
+                               stock.confidence === 'high' ? 'medium-confidence' : '';
+        
+        div.innerHTML = `
+            <div class="card stock-card ${confidenceClass} hover-lift">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h6 class="font-semibold text-lg">${stock.symbol}</h6>
+                            <p class="text-sm text-gray-600">${stock.stock_name || '未知股票'}</p>
+                        </div>
+                        <span class="score">${stock.total_score.toFixed(3)}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="price">¥${stock.current_price.toFixed(2)}</div>
+                        <span class="badge badge-secondary">${stock.market}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 text-center text-sm mb-4">
+                        <div>
+                            <p class="text-gray-600 text-xs mb-1">竞价</p>
+                            <p class="${stock.auction_ratio > 0 ? 'text-green-600' : 'text-red-600'} font-semibold">
+                                ${stock.auction_ratio > 0 ? '+' : ''}${stock.auction_ratio.toFixed(1)}%
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-xs mb-1">目标</p>
+                            <p class="text-green-600 font-semibold">¥${stock.target_price.toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-xs mb-1">止损</p>
+                            <p class="text-red-600 font-semibold">¥${stock.stop_loss.toFixed(2)}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-xs text-gray-600">${stock.strategy}</p>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button class="button button-sm button-outline flex-1" onclick="showStockDetail('${stock.symbol}')">详情</button>
+                        <select class="select text-xs py-1 px-2 w-24" onchange="updateStockStatus(${stock.id}, this.value)">
+                            <option value="pending" ${stock.status === 'pending' ? 'selected' : ''}>待决策</option>
+                            <option value="bought" ${stock.status === 'bought' ? 'selected' : ''}>已买入</option>
+                            <option value="watching" ${stock.status === 'watching' ? 'selected' : ''}>观察</option>
+                            <option value="ignored" ${stock.status === 'ignored' ? 'selected' : ''}>忽略</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return div;
+    }
+    
+    // 更新统计信息
+    function updateStats() {
+        document.getElementById('totalCount').textContent = filteredStocks.length;
+        document.getElementById('highConfidenceCount').textContent = 
+            filteredStocks.filter(s => s.confidence === 'very_high').length;
+        
+        const avgScore = filteredStocks.length > 0 ? 
+            filteredStocks.reduce((sum, s) => sum + s.total_score, 0) / filteredStocks.length : 0;
+        document.getElementById('avgScore').textContent = avgScore.toFixed(3);
+        
+        const markets = [...new Set(filteredStocks.map(s => s.market))];
+        document.getElementById('marketCount').textContent = markets.length;
+    }
+    
+    // 更新股票状态
+    function updateStockStatus(stockId, newStatus) {
+        makeRequest('/api/update_stock_status', 'POST', {
+            id: stockId,
+            status: newStatus
+        }).then(response => {
+            if (response.success) {
+                showNotification('状态已更新', 'default');
+                // 更新本地数据
+                const stock = allStocks.find(s => s.id === stockId);
+                if (stock) {
+                    stock.status = newStatus;
+                }
+            } else {
+                showNotification(response.message, 'destructive');
+            }
+        });
+    }
+    
+    // 显示股票详情 - 跳转到详情页面
+    function showStockDetail(symbol) {
+        // 跳转到股票详情页面，进行深度分析
+        window.location.href = `/stock/${symbol}`;
+    }
+    
+    // 关闭股票详情模态框
+    function closeStockDetailModal() {
+        document.getElementById('stockDetailModal').classList.add('hidden');
+    }
+    
+    // >>> CChanTrader-AI Explain Patch : 策略解释模态框函数
+    // 显示策略解释模态框
+    function showExplanationModal(symbol, stockName, stockData) {
+        try {
+            // 设置标题
+            document.getElementById('explanationModalTitle').textContent = `${symbol} 策略解释`;
+            document.getElementById('explanationModalSubtitle').textContent = `${stockName} - 详细投资分析`;
+            
+            // 填充基本信息
+            document.getElementById('exp_symbol').textContent = symbol;
+            document.getElementById('exp_price').textContent = `¥${stockData.current_price.toFixed(2)}`;
+            
+            const confidenceMap = {
+                'very_high': '非常高',
+                'high': '高',
+                'medium': '中等'
+            };
+            document.getElementById('exp_confidence').textContent = confidenceMap[stockData.confidence] || '中等';
+            document.getElementById('exp_score').textContent = stockData.total_score.toFixed(3);
+            
+            // 填充推荐理由
+            document.getElementById('exp_reason').textContent = stockData.explanation || '技术面表现良好，具备投资价值。';
+            
+            // 填充买卖策略
+            document.getElementById('exp_buy_point').textContent = stockData.buy_point_explanation || 
+                `建议在${stockData.current_price.toFixed(2)}元附近买入，等待技术信号确认。`;
+            
+            document.getElementById('exp_sell_logic').textContent = stockData.sell_logic || 
+                '达到目标价位时分批止盈，跌破止损位坚决出局。';
+            
+            // 填充风险收益信息
+            document.getElementById('exp_entry').textContent = `¥${stockData.current_price.toFixed(2)}`;
+            document.getElementById('exp_stop_loss').textContent = `¥${stockData.stop_loss.toFixed(2)}`;
+            
+            const targetRange = stockData.target_range || [0, 0];
+            if (targetRange[0] > 0 && targetRange[1] > 0) {
+                document.getElementById('exp_target').textContent = `¥${targetRange[0].toFixed(2)} - ¥${targetRange[1].toFixed(2)}`;
+            } else {
+                const target = stockData.current_price * 1.1;
+                document.getElementById('exp_target').textContent = `¥${target.toFixed(2)}`;
+            }
+            
+            document.getElementById('exp_rr').textContent = stockData.expected_rr || '1.5';
+            
+            document.getElementById('exp_risk_analysis').textContent = stockData.risk_reward_analysis || 
+                '请根据个人风险偏好谨慎操作，严格执行止损策略。';
+            
+            // 显示模态框
+            document.getElementById('explanationModal').classList.remove('hidden');
+            
+        } catch (error) {
+            console.error('显示策略解释失败:', error);
+            showNotification('加载策略解释失败', 'destructive');
+        }
+    }
+    
+    // 关闭策略解释模态框
+    function closeExplanationModal() {
+        document.getElementById('explanationModal').classList.add('hidden');
+    }
+    
+    // 加入自选股
+    function addToWatchlist() {
+        showNotification('自选股功能开发中...', 'default');
+        closeExplanationModal();
+    }
+    
+    // 运行分析
+    function runAnalysis() {
+        showNotification('开始执行股票分析，请稍候...', 'default');
+        
+        makeRequest('/api/run_analysis', 'POST')
+            .then(response => {
+                if (response.success) {
+                    showNotification(response.message, 'default');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showNotification(response.message, 'destructive');
+                }
+            });
+    }
+    
+    // 事件监听器
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', function() {
+        const newDate = this.value;
+        window.location.href = `{{ url_for('recommendations') }}?date=${newDate}`;
+    });
+    
+    // 点击模态框外部关闭
+    document.getElementById('stockDetailModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeStockDetailModal();
+        }
+    });
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        updateStats();
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}

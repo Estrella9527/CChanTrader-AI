@@ -1,0 +1,1146 @@
+{% extends "base_shadcn.html" %}
+
+{% block title %}策略配置 - Smart Alpha Engine{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight">策略配置中心</h1>
+        <p class="text-muted-foreground mt-2">智能因子权重配置与策略优化</p>
+    </div>
+    <div class="flex items-center space-x-3">
+        <button class="button button-outline" onclick="resetToDefault()">
+            <i data-lucide="rotate-ccw" class="mr-2 h-4 w-4"></i>
+            恢复默认
+        </button>
+        <button class="button button-outline" onclick="previewStrategy()">
+            <i data-lucide="eye" class="mr-2 h-4 w-4"></i>
+            预览效果
+        </button>
+        <button class="button button-primary" onclick="saveStrategy()">
+            <i data-lucide="save" class="mr-2 h-4 w-4"></i>
+            保存策略
+        </button>
+    </div>
+</div>
+
+<!-- Strategy Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Current Strategy Performance -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">当前策略表现</h3>
+            <div class="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                <i data-lucide="trending-up" class="h-4 w-4 text-green-600 dark:text-green-400"></i>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">月度收益</span>
+                <span class="font-semibold text-green-600">+8.7%</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">胜率</span>
+                <span class="font-semibold">73.2%</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">夏普比率</span>
+                <span class="font-semibold">1.87</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Strategy Status -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">策略状态</h3>
+            <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                <i data-lucide="activity" class="h-4 w-4 text-blue-600 dark:text-blue-400"></i>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted-foreground">运行状态</span>
+                <span class="badge badge-default">活跃</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted-foreground">因子数量</span>
+                <span class="font-semibold">12个</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-muted-foreground">最后更新</span>
+                <span class="text-sm">5分钟前</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">快速操作</h3>
+            <div class="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                <i data-lucide="zap" class="h-4 w-4 text-purple-600 dark:text-purple-400"></i>
+            </div>
+        </div>
+        <div class="space-y-2">
+            <button class="w-full button button-outline justify-start" onclick="runBacktest()">
+                <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
+                运行回测
+            </button>
+            <button class="w-full button button-outline justify-start" onclick="exportConfig()">
+                <i data-lucide="download" class="mr-2 h-4 w-4"></i>
+                导出配置
+            </button>
+            <button class="w-full button button-outline justify-start" onclick="cloneStrategy()">
+                <i data-lucide="copy" class="mr-2 h-4 w-4"></i>
+                克隆策略
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Tabs -->
+<div class="card">
+    <div class="border-b">
+        <nav class="flex space-x-8 px-6" role="tablist">
+            <button role="tab" aria-selected="true" class="config-tab-trigger active" data-tab="factors">
+                <i data-lucide="layers" class="mr-2 h-4 w-4"></i>
+                因子权重
+            </button>
+            <button role="tab" aria-selected="false" class="config-tab-trigger" data-tab="filters">
+                <i data-lucide="filter" class="mr-2 h-4 w-4"></i>
+                筛选条件
+            </button>
+            <button role="tab" aria-selected="false" class="config-tab-trigger" data-tab="risk">
+                <i data-lucide="shield" class="mr-2 h-4 w-4"></i>
+                风险控制
+            </button>
+            <button role="tab" aria-selected="false" class="config-tab-trigger" data-tab="execution">
+                <i data-lucide="settings" class="mr-2 h-4 w-4"></i>
+                执行参数
+            </button>
+        </nav>
+    </div>
+    
+    <!-- Factors Tab -->
+    <div id="factors-tab" class="config-tab-content p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Factor Categories -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Technical Factors -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">技术分析因子</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-muted-foreground">权重:</span>
+                            <span class="font-semibold text-blue-600" id="tech-total-weight">65%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- RSI Factor -->
+                        <div class="factor-item p-4 border rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="rsi-enabled" class="factor-toggle" checked>
+                                    <div>
+                                        <label for="rsi-enabled" class="font-medium cursor-pointer">RSI 相对强弱指标</label>
+                                        <p class="text-sm text-muted-foreground">衡量股价超买超卖状态</p>
+                                    </div>
+                                </div>
+                                <span class="font-semibold text-sm" id="rsi-weight-display">20%</span>
+                            </div>
+                            <div class="factor-controls">
+                                <div class="flex items-center space-x-4">
+                                    <label class="text-sm font-medium min-w-[60px]">权重:</label>
+                                    <input 
+                                        type="range" 
+                                        id="rsi-weight" 
+                                        class="factor-slider flex-1" 
+                                        min="0" 
+                                        max="50" 
+                                        value="20"
+                                        oninput="updateFactorWeight('rsi', this.value)"
+                                    >
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">超买阈值</label>
+                                        <input type="number" class="input mt-1" value="70" min="60" max="90">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">超卖阈值</label>
+                                        <input type="number" class="input mt-1" value="30" min="10" max="40">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- MACD Factor -->
+                        <div class="factor-item p-4 border rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="macd-enabled" class="factor-toggle" checked>
+                                    <div>
+                                        <label for="macd-enabled" class="font-medium cursor-pointer">MACD 指数平滑异同移动平均线</label>
+                                        <p class="text-sm text-muted-foreground">捕捉趋势转换信号</p>
+                                    </div>
+                                </div>
+                                <span class="font-semibold text-sm" id="macd-weight-display">25%</span>
+                            </div>
+                            <div class="factor-controls">
+                                <div class="flex items-center space-x-4">
+                                    <label class="text-sm font-medium min-w-[60px]">权重:</label>
+                                    <input 
+                                        type="range" 
+                                        id="macd-weight" 
+                                        class="factor-slider flex-1" 
+                                        min="0" 
+                                        max="50" 
+                                        value="25"
+                                        oninput="updateFactorWeight('macd', this.value)"
+                                    >
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mt-3">
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">快线</label>
+                                        <input type="number" class="input mt-1" value="12" min="5" max="20">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">慢线</label>
+                                        <input type="number" class="input mt-1" value="26" min="20" max="35">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">信号线</label>
+                                        <input type="number" class="input mt-1" value="9" min="5" max="15">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bollinger Bands -->
+                        <div class="factor-item p-4 border rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="bb-enabled" class="factor-toggle" checked>
+                                    <div>
+                                        <label for="bb-enabled" class="font-medium cursor-pointer">布林带 Bollinger Bands</label>
+                                        <p class="text-sm text-muted-foreground">识别价格波动区间</p>
+                                    </div>
+                                </div>
+                                <span class="font-semibold text-sm" id="bb-weight-display">20%</span>
+                            </div>
+                            <div class="factor-controls">
+                                <div class="flex items-center space-x-4">
+                                    <label class="text-sm font-medium min-w-[60px]">权重:</label>
+                                    <input 
+                                        type="range" 
+                                        id="bb-weight" 
+                                        class="factor-slider flex-1" 
+                                        min="0" 
+                                        max="50" 
+                                        value="20"
+                                        oninput="updateFactorWeight('bb', this.value)"
+                                    >
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">周期</label>
+                                        <input type="number" class="input mt-1" value="20" min="10" max="30">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-muted-foreground">标准差倍数</label>
+                                        <input type="number" class="input mt-1" value="2" min="1" max="3" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Auction Factors -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">竞价分析因子</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-muted-foreground">权重:</span>
+                            <span class="font-semibold text-green-600" id="auction-total-weight">35%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Auction Ratio -->
+                        <div class="factor-item p-4 border rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="auction-ratio-enabled" class="factor-toggle" checked>
+                                    <div>
+                                        <label for="auction-ratio-enabled" class="font-medium cursor-pointer">竞价比率</label>
+                                        <p class="text-sm text-muted-foreground">开盘价相对前收盘价涨跌幅</p>
+                                    </div>
+                                </div>
+                                <span class="font-semibold text-sm" id="auction-ratio-weight-display">60%</span>
+                            </div>
+                            <div class="factor-controls">
+                                <div class="flex items-center space-x-4">
+                                    <label class="text-sm font-medium min-w-[60px]">权重:</label>
+                                    <input 
+                                        type="range" 
+                                        id="auction-ratio-weight" 
+                                        class="factor-slider flex-1" 
+                                        min="0" 
+                                        max="100" 
+                                        value="60"
+                                        oninput="updateFactorWeight('auction-ratio', this.value)"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Capital Flow -->
+                        <div class="factor-item p-4 border rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="capital-flow-enabled" class="factor-toggle" checked>
+                                    <div>
+                                        <label for="capital-flow-enabled" class="font-medium cursor-pointer">资金流向</label>
+                                        <p class="text-sm text-muted-foreground">大单资金净流入情况</p>
+                                    </div>
+                                </div>
+                                <span class="font-semibold text-sm" id="capital-flow-weight-display">40%</span>
+                            </div>
+                            <div class="factor-controls">
+                                <div class="flex items-center space-x-4">
+                                    <label class="text-sm font-medium min-w-[60px]">权重:</label>
+                                    <input 
+                                        type="range" 
+                                        id="capital-flow-weight" 
+                                        class="factor-slider flex-1" 
+                                        min="0" 
+                                        max="100" 
+                                        value="40"
+                                        oninput="updateFactorWeight('capital-flow', this.value)"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Weight Summary -->
+            <div class="space-y-6">
+                <!-- Weight Distribution Chart -->
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-4">权重分布</h4>
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <canvas id="weight-chart" width="200" height="200"></canvas>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-blue-500 rounded"></div>
+                                    <span>技术因子</span>
+                                </div>
+                                <span class="font-medium">65%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-green-500 rounded"></div>
+                                    <span>竞价因子</span>
+                                </div>
+                                <span class="font-medium">35%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Prediction -->
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-4">预期表现</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">预期月收益</span>
+                            <span class="font-semibold text-green-600" id="predicted-return">+7.8%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">预期胜率</span>
+                            <span class="font-semibold" id="predicted-winrate">71.5%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">风险评级</span>
+                            <span class="badge badge-secondary" id="risk-level">中等</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-muted/50 rounded-lg">
+                        <p class="text-xs text-muted-foreground">
+                            基于历史回测数据预测，实际结果可能因市场条件而异
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Factor Importance -->
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-4">因子重要性</h4>
+                    <div class="space-y-3">
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>MACD</span>
+                                <span class="font-medium">9.2</span>
+                            </div>
+                            <div class="w-full bg-muted rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 92%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>竞价比率</span>
+                                <span class="font-medium">8.7</span>
+                            </div>
+                            <div class="w-full bg-muted rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full" style="width: 87%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>RSI</span>
+                                <span class="font-medium">7.4</span>
+                            </div>
+                            <div class="w-full bg-muted rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: 74%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters Tab -->
+    <div id="filters-tab" class="config-tab-content p-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Basic Filters -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold">基础筛选条件</h3>
+                
+                <!-- Market Cap Filter -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">市值范围</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <input type="number" class="input" placeholder="最小市值(亿)" value="50">
+                        </div>
+                        <div>
+                            <input type="number" class="input" placeholder="最大市值(亿)" value="1000">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Range -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">价格区间</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <input type="number" class="input" placeholder="最低价格" value="5" step="0.1">
+                        </div>
+                        <div>
+                            <input type="number" class="input" placeholder="最高价格" value="300" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Volume Filter -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">成交量要求</label>
+                    <div class="space-y-2">
+                        <input type="number" class="input" placeholder="最小日均成交量(万)" value="1000">
+                        <label class="flex items-center space-x-2 text-sm">
+                            <input type="checkbox" class="rounded" checked>
+                            <span>排除ST股票</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm">
+                            <input type="checkbox" class="rounded" checked>
+                            <span>排除停牌股票</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Industry Filter -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">行业筛选</label>
+                    <div class="space-y-2">
+                        <select class="input">
+                            <option>全部行业</option>
+                            <option>银行</option>
+                            <option>券商</option>
+                            <option>科技</option>
+                            <option>医药</option>
+                            <option>消费</option>
+                        </select>
+                        <label class="flex items-center space-x-2 text-sm">
+                            <input type="checkbox" class="rounded">
+                            <span>排除金融行业</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Filters -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold">高级筛选条件</h3>
+                
+                <!-- Score Thresholds -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">评分阈值</label>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-muted-foreground">最低综合评分</span>
+                                <span class="text-sm font-medium" id="min-score-display">0.65</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                class="w-full" 
+                                min="0.1" 
+                                max="1.0" 
+                                step="0.01" 
+                                value="0.65"
+                                oninput="document.getElementById('min-score-display').textContent = this.value"
+                            >
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-muted-foreground">技术评分权重</span>
+                                <span class="text-sm font-medium" id="tech-threshold-display">0.60</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                class="w-full" 
+                                min="0.1" 
+                                max="1.0" 
+                                step="0.01" 
+                                value="0.60"
+                                oninput="document.getElementById('tech-threshold-display').textContent = this.value"
+                            >
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Signal Strength -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">信号强度要求</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">包含强买信号</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">包含买入信号</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded">
+                            <span class="text-sm">包含关注信号</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Output Limits -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">输出限制</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-muted-foreground">最大推荐数量</label>
+                            <input type="number" class="input mt-1" value="20" min="5" max="100">
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted-foreground">单行业最大数量</label>
+                            <input type="number" class="input mt-1" value="5" min="1" max="20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Tab -->
+    <div id="risk-tab" class="config-tab-content p-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Risk Management -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold">风险管理参数</h3>
+                
+                <!-- Position Sizing -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">仓位控制</label>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-muted-foreground">单股最大仓位</span>
+                                <span class="text-sm font-medium" id="max-position-display">20%</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                class="w-full" 
+                                min="5" 
+                                max="50" 
+                                value="20"
+                                oninput="document.getElementById('max-position-display').textContent = this.value + '%'"
+                            >
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-muted-foreground">总仓位上限</span>
+                                <span class="text-sm font-medium" id="total-position-display">80%</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                class="w-full" 
+                                min="50" 
+                                max="100" 
+                                value="80"
+                                oninput="document.getElementById('total-position-display').textContent = this.value + '%'"
+                            >
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stop Loss -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">止损设置</label>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-muted-foreground">默认止损比例</span>
+                                <span class="text-sm font-medium" id="stop-loss-display">-8%</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                class="w-full" 
+                                min="3" 
+                                max="20" 
+                                value="8"
+                                oninput="document.getElementById('stop-loss-display').textContent = '-' + this.value + '%'"
+                            >
+                        </div>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">启用动态止损</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded">
+                            <span class="text-sm">启用移动止损</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Diversification -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">分散化要求</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-muted-foreground">最小行业数量</label>
+                            <input type="number" class="input mt-1" value="3" min="1" max="10">
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted-foreground">单行业最大占比</label>
+                            <input type="number" class="input mt-1" value="30" min="10" max="50">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Risk Monitoring -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold">风险监控</h3>
+                
+                <!-- Current Risk Metrics -->
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-3">当前风险指标</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">VaR (95%)</span>
+                            <span class="font-semibold text-red-600">-3.2%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">最大回撤</span>
+                            <span class="font-semibold text-red-600">-8.4%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">Beta系数</span>
+                            <span class="font-semibold">0.87</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-muted-foreground">相关性</span>
+                            <span class="font-semibold">0.65</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Risk Alerts -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">风险预警</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">单日亏损超过3%时预警</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">总仓位超过上限时预警</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded">
+                            <span class="text-sm">行业集中度过高时预警</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Execution Tab -->
+    <div id="execution-tab" class="config-tab-content p-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Execution Settings -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold">执行参数</h3>
+                
+                <!-- Schedule Settings -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">执行时间安排</label>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-muted-foreground">主要执行时间</label>
+                                <input type="time" class="input mt-1" value="09:25">
+                            </div>
+                            <div>
+                                <label class="text-xs text-muted-foreground">备用执行时间</label>
+                                <input type="time" class="input mt-1" value="15:05">
+                            </div>
+                        </div>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">仅在交易日执行</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">跳过节假日</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Email Settings -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">邮件通知</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">发送选股结果</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">发送风险提醒</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded">
+                            <span class="text-sm">发送执行错误通知</span>
+                        </label>
+                        <div class="mt-3">
+                            <label class="text-xs text-muted-foreground">邮件接收人</label>
+                            <textarea class="input mt-1" rows="3" placeholder="email1@example.com,email2@example.com">{{ email_config.recipient_emails or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Data Sources -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium">数据源配置</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">启用AKShare数据源</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" class="rounded" checked>
+                            <span class="text-sm">启用BaoStock数据源</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <div>
+                                <label class="text-xs text-muted-foreground">数据更新频率</label>
+                                <select class="input mt-1">
+                                    <option>实时</option>
+                                    <option selected>5分钟</option>
+                                    <option>15分钟</option>
+                                    <option>30分钟</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-muted-foreground">超时时间(秒)</label>
+                                <input type="number" class="input mt-1" value="30" min="10" max="300">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Status -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold">系统状态</h3>
+                
+                <!-- Current Status -->
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-3">运行状态</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="status-dot status-success"></div>
+                                <span class="text-sm">调度器</span>
+                            </div>
+                            <span class="text-sm font-medium text-green-600">运行中</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="status-dot status-success"></div>
+                                <span class="text-sm">数据连接</span>
+                            </div>
+                            <span class="text-sm font-medium text-green-600">正常</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="status-dot {{ 'status-success' if email_config.recipient_emails else 'status-warning' }}"></div>
+                                <span class="text-sm">邮件系统</span>
+                            </div>
+                            <span class="text-sm font-medium {{ 'text-green-600' if email_config.recipient_emails else 'text-yellow-600' }}">
+                                {{ '已配置' if email_config.recipient_emails else '待配置' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Execution History -->
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-3">执行历史</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="status-dot status-success mt-1"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">策略执行成功</div>
+                                <div class="text-xs text-muted-foreground">09:25 - 选出15只股票</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="status-dot status-info mt-1"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">数据更新完成</div>
+                                <div class="text-xs text-muted-foreground">09:20 - 市场数据已同步</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="status-dot status-success mt-1"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">邮件发送成功</div>
+                                <div class="text-xs text-muted-foreground">09:30 - 已发送至3个邮箱</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configuration tab functionality
+    document.querySelectorAll('.config-tab-trigger').forEach(trigger => {
+        trigger.className += ' relative flex items-center py-4 px-1 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors';
+        
+        if (trigger.classList.contains('active')) {
+            trigger.className += ' border-primary text-foreground';
+        }
+        
+        trigger.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            // Update tab triggers
+            document.querySelectorAll('.config-tab-trigger').forEach(t => {
+                t.classList.remove('active');
+                t.className = t.className.replace(' border-primary text-foreground', ' border-transparent text-muted-foreground');
+                t.setAttribute('aria-selected', 'false');
+            });
+            
+            this.classList.add('active');
+            this.className = this.className.replace(' border-transparent text-muted-foreground', ' border-primary text-foreground');
+            this.setAttribute('aria-selected', 'true');
+            
+            // Update tab content
+            document.querySelectorAll('.config-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            document.getElementById(tabId + '-tab').classList.remove('hidden');
+        });
+    });
+
+    // Factor weight management
+    const factorWeights = {
+        tech: {
+            rsi: 20,
+            macd: 25,
+            bb: 20
+        },
+        auction: {
+            'auction-ratio': 60,
+            'capital-flow': 40
+        }
+    };
+
+    function updateFactorWeight(factor, value) {
+        const displayElement = document.getElementById(`${factor}-weight-display`);
+        displayElement.textContent = `${value}%`;
+        
+        // Update factor weights
+        if (['rsi', 'macd', 'bb'].includes(factor)) {
+            factorWeights.tech[factor] = parseInt(value);
+            updateTechTotalWeight();
+        } else if (['auction-ratio', 'capital-flow'].includes(factor)) {
+            factorWeights.auction[factor] = parseInt(value);
+            updateAuctionTotalWeight();
+        }
+        
+        updateWeightChart();
+        updatePredictions();
+    }
+
+    function updateTechTotalWeight() {
+        const total = Object.values(factorWeights.tech).reduce((sum, weight) => sum + weight, 0);
+        document.getElementById('tech-total-weight').textContent = `${total}%`;
+    }
+
+    function updateAuctionTotalWeight() {
+        const total = Object.values(factorWeights.auction).reduce((sum, weight) => sum + weight, 0);
+        document.getElementById('auction-total-weight').textContent = `${total}%`;
+    }
+
+    // Weight distribution chart
+    let weightChart;
+    
+    function initializeWeightChart() {
+        const ctx = document.getElementById('weight-chart').getContext('2d');
+        weightChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['技术因子', '竞价因子'],
+                datasets: [{
+                    data: [65, 35],
+                    backgroundColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(34, 197, 94)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    function updateWeightChart() {
+        if (weightChart) {
+            const techTotal = Object.values(factorWeights.tech).reduce((sum, weight) => sum + weight, 0);
+            const auctionTotal = Object.values(factorWeights.auction).reduce((sum, weight) => sum + weight, 0);
+            const total = techTotal + auctionTotal;
+            
+            const techPercent = Math.round((techTotal / total) * 100);
+            const auctionPercent = Math.round((auctionTotal / total) * 100);
+            
+            weightChart.data.datasets[0].data = [techPercent, auctionPercent];
+            weightChart.update();
+        }
+    }
+
+    function updatePredictions() {
+        // Simulate prediction updates based on weight changes
+        const techTotal = Object.values(factorWeights.tech).reduce((sum, weight) => sum + weight, 0);
+        const auctionTotal = Object.values(factorWeights.auction).reduce((sum, weight) => sum + weight, 0);
+        
+        // Simulate performance prediction
+        const baseReturn = 7.8;
+        const weightFactor = (techTotal + auctionTotal) / 100;
+        const predictedReturn = (baseReturn * weightFactor).toFixed(1);
+        
+        document.getElementById('predicted-return').textContent = `+${predictedReturn}%`;
+        
+        // Simulate win rate prediction
+        const baseWinRate = 71.5;
+        const predictedWinRate = (baseWinRate * weightFactor).toFixed(1);
+        document.getElementById('predicted-winrate').textContent = `${predictedWinRate}%`;
+        
+        // Update risk level
+        const riskLevel = weightFactor > 0.9 ? '高' : weightFactor > 0.7 ? '中等' : '低';
+        document.getElementById('risk-level').textContent = riskLevel;
+    }
+
+    // Factor toggle functionality
+    document.querySelectorAll('.factor-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const factorItem = this.closest('.factor-item');
+            const controls = factorItem.querySelector('.factor-controls');
+            
+            if (this.checked) {
+                factorItem.classList.remove('opacity-50');
+                controls.style.display = 'block';
+            } else {
+                factorItem.classList.add('opacity-50');
+                controls.style.display = 'none';
+            }
+        });
+    });
+
+    // Strategy actions
+    async function saveStrategy() {
+        showLoading();
+        
+        try {
+            const strategyConfig = {
+                factors: factorWeights,
+                filters: getFilterConfig(),
+                risk: getRiskConfig(),
+                execution: getExecutionConfig()
+            };
+            
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            showToast('策略配置已保存', 'success');
+        } catch (error) {
+            showToast('保存失败', 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function previewStrategy() {
+        showToast('正在生成策略预览...', 'info');
+        
+        // Simulate preview generation
+        setTimeout(() => {
+            showToast('预览已生成，预期月收益 +8.2%', 'success');
+        }, 1500);
+    }
+
+    function resetToDefault() {
+        if (confirm('确定要恢复到默认配置吗？当前配置将丢失。')) {
+            // Reset factor weights
+            factorWeights.tech = { rsi: 20, macd: 25, bb: 20 };
+            factorWeights.auction = { 'auction-ratio': 60, 'capital-flow': 40 };
+            
+            // Update UI
+            document.getElementById('rsi-weight').value = 20;
+            document.getElementById('macd-weight').value = 25;
+            document.getElementById('bb-weight').value = 20;
+            document.getElementById('auction-ratio-weight').value = 60;
+            document.getElementById('capital-flow-weight').value = 40;
+            
+            // Update displays
+            updateFactorWeight('rsi', 20);
+            updateFactorWeight('macd', 25);
+            updateFactorWeight('bb', 20);
+            updateFactorWeight('auction-ratio', 60);
+            updateFactorWeight('capital-flow', 40);
+            
+            showToast('已恢复默认配置', 'info');
+        }
+    }
+
+    function runBacktest() {
+        showToast('正在运行回测分析...', 'info');
+        
+        setTimeout(() => {
+            showToast('回测完成，年化收益 +24.6%，最大回撤 -8.4%', 'success');
+        }, 3000);
+    }
+
+    function exportConfig() {
+        const config = {
+            factors: factorWeights,
+            timestamp: new Date().toISOString(),
+            version: '1.0'
+        };
+        
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `strategy_config_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        showToast('配置已导出', 'success');
+    }
+
+    function cloneStrategy() {
+        showToast('策略已克隆为"策略副本"', 'success');
+    }
+
+    function getFilterConfig() {
+        // Collect filter configuration from UI
+        return {
+            minMarketCap: 50,
+            maxMarketCap: 1000,
+            minPrice: 5,
+            maxPrice: 300,
+            minVolume: 1000,
+            excludeST: true,
+            excludeSuspended: true
+        };
+    }
+
+    function getRiskConfig() {
+        // Collect risk configuration from UI
+        return {
+            maxSinglePosition: 20,
+            maxTotalPosition: 80,
+            defaultStopLoss: 8,
+            enableDynamicStopLoss: true,
+            enableTrailingStopLoss: false
+        };
+    }
+
+    function getExecutionConfig() {
+        // Collect execution configuration from UI
+        return {
+            mainExecutionTime: '09:25',
+            backupExecutionTime: '15:05',
+            tradingDaysOnly: true,
+            skipHolidays: true,
+            emailNotifications: true
+        };
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeWeightChart();
+        updateTechTotalWeight();
+        updateAuctionTotalWeight();
+        updatePredictions();
+        
+        // Initialize factor sliders
+        document.querySelectorAll('.factor-slider').forEach(slider => {
+            slider.className += ' h-2 bg-muted rounded-lg appearance-none cursor-pointer';
+        });
+    });
+</script>
+{% endblock %}

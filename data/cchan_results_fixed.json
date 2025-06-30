@@ -1,0 +1,26 @@
+[
+  {
+    "symbol": "sh.600030",
+    "industry": "活跃股",
+    "entry_price": 27.58,
+    "stop_loss": 26.75,
+    "signal": "2_buy",
+    "price_strength": 3.37,
+    "volume_factor": 2.84,
+    "rsi": 61.6,
+    "trend": "up",
+    "confidence": 1.0
+  },
+  {
+    "symbol": "sh.600000",
+    "industry": "活跃股",
+    "entry_price": 13.55,
+    "stop_loss": 13.14,
+    "signal": "3_buy",
+    "price_strength": 7.71,
+    "volume_factor": 1.59,
+    "rsi": 84.4,
+    "trend": "up",
+    "confidence": 0.8
+  }
+]

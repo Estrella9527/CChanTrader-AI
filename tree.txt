@@ -1,0 +1,88 @@
+.
+├── backend/
+│   ├── app.py
+│   ├── auction_data_demo.py
+│   ├── auction_data_simple_demo.py
+│   ├── auction_indicators_design.py
+│   ├── auction_test_simple.py
+│   ├── cchan_fixed_market_coverage.py
+│   ├── cchan_historical_test.py
+│   ├── cchan_multi_market_analysis.py
+│   ├── cchan_test_june6.py
+│   ├── cchan_trader_advanced.py
+│   ├── cchan_trader_auction_enhanced.py
+│   ├── cchan_trader_core.py
+│   ├── cchan_trader_fixed.py
+│   ├── cchan_trader_optimized.py
+│   ├── create_point_cloud.py
+│   ├── daily_report_generator.py
+│   ├── debug_cchan.py
+│   ├── explain_builder.py
+│   ├── explain_generator.py
+│   ├── generate_depth_map.py
+│   ├── market_cap_filter_tool.py
+│   ├── quick_email_test.py
+│   ├── realtime_auction_monitor.py
+│   ├── routes/
+│   ├── services/
+│   │   └── email_config.py
+│   ├── setup_trading_email.py
+│   ├── short_term_trading_optimizer.py
+│   ├── start_modern_web.py
+│   ├── start_shadcn_web.py
+│   ├── start_web.py
+│   ├── stock_analysis_002846.py
+│   ├── stock_selector.py
+│   ├── test_analysis_improvements.py
+│   ├── test_config_fix.py
+│   ├── test_email_template.py
+│   ├── test_explain_integration.py
+│   ├── test_modal_integration.py
+│   ├── test_strategy_api.py
+│   ├── test_strategy_config.py
+│   └── verify_stock_data.py
+├── analysis/
+│   ├── deep_stock_analyzer.py
+│   ├── optimized_stock_analyzer.py
+│   └── trading_day_scheduler.py
+├── frontend/
+│   ├── static/
+│   │   ├── depth.png
+│   │   ├── js
+│   │   ├── script.js
+│   │   ├── server.js
+│   │   └── style.css
+│   └── templates/
+│       ├── base.html
+│       ├── base_modern.html
+│       ├── base_shadcn.html
+│       ├── config.html
+│       └── config_modern.html
+├── data/
+│   ├── analysis_june6_prediction.json
+│   ├── auction_analysis_20250628_142852.json
+│   ├── auction_analysis_20250628_142935.json
+│   ├── auction_analysis_20250628_143008.json
+│   ├── cchan_advanced_results.json
+│   ├── cchan_optimized_results.json
+│   ├── cchan_results.json
+│   ├── cchan_results_fixed.json
+│   ├── cchan_web.db
+│   ├── fixed_market_results.json
+│   ├── historical_analysis_20250623.json
+│   └── selected_stocks.json
+├── config/
+│   └── requirements_auction.txt
+└── docs/
+    ├── EMAIL_TEMPLATE_SUMMARY.md
+    ├── EXPLAIN_FEATURE_USAGE.md
+    ├── UPGRADE_GUIDE.md
+    ├── auction_data_final_report.md
+    ├── auction_data_research.md
+    ├── auction_enhanced_guide.md
+    ├── cchan_upgrade_report.md
+    ├── data_source_comparison.md
+    ├── trading_email_setup_guide.md
+    ├── web_demo_showcase.md
+    ├── web_platform_guide.md
+    └── web_product_design.md

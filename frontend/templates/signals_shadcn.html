@@ -1,0 +1,1044 @@
+{% extends "base_shadcn.html" %}
+
+{% block title %}选股结果 - Smart Alpha Engine{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight">选股结果</h1>
+        <p class="text-muted-foreground mt-2">基于多因子模型的智能选股信号</p>
+    </div>
+    <div class="flex items-center space-x-3">
+        <button class="button button-outline" onclick="refreshSignals()">
+            <i data-lucide="refresh-cw" class="mr-2 h-4 w-4"></i>
+            刷新数据
+        </button>
+        <button class="button button-outline" onclick="exportData()">
+            <i data-lucide="download" class="mr-2 h-4 w-4"></i>
+            导出Excel
+        </button>
+        <button class="button button-primary" onclick="runAnalysis()">
+            <i data-lucide="play" class="mr-2 h-4 w-4"></i>
+            执行分析
+        </button>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-muted-foreground">总信号数</p>
+                <p class="text-2xl font-bold" id="total-signals">{{ recommendations|length }}</p>
+            </div>
+            <i data-lucide="target" class="h-8 w-8 text-blue-500"></i>
+        </div>
+    </div>
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-muted-foreground">强买信号</p>
+                <p class="text-2xl font-bold text-green-600" id="strong-buy-count">
+                    {{ recommendations|selectattr("confidence", "equalto", "very_high")|list|length }}
+                </p>
+            </div>
+            <i data-lucide="trending-up" class="h-8 w-8 text-green-500"></i>
+        </div>
+    </div>
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-muted-foreground">平均评分</p>
+                <p class="text-2xl font-bold text-purple-600" id="avg-score">
+                    {% if recommendations %}
+                        {{ "%.3f"|format(recommendations|map(attribute='total_score')|sum / recommendations|length) }}
+                    {% else %}
+                        0.000
+                    {% endif %}
+                </p>
+            </div>
+            <i data-lucide="bar-chart-3" class="h-8 w-8 text-purple-500"></i>
+        </div>
+    </div>
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-muted-foreground">覆盖行业</p>
+                <p class="text-2xl font-bold text-orange-600" id="industry-count">
+                    {{ recommendations|map(attribute='market')|unique|list|length }}
+                </p>
+            </div>
+            <i data-lucide="layers" class="h-8 w-8 text-orange-500"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Controls -->
+<div class="card mb-6">
+    <div class="p-4 border-b">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">筛选条件</h3>
+            <button class="button button-ghost button-sm" onclick="clearFilters()">
+                <i data-lucide="x" class="mr-1 h-3 w-3"></i>
+                清除筛选
+            </button>
+        </div>
+    </div>
+    <div class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <!-- Date Filter -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium">分析日期</label>
+                <input 
+                    type="date" 
+                    id="date-filter" 
+                    value="{{ current_date }}" 
+                    class="input"
+                    onchange="applyDateFilter()"
+                >
+            </div>
+            
+            <!-- Market Filter -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium">交易市场</label>
+                <select id="market-filter" class="input" onchange="applyFilters()">
+                    <option value="">全部市场</option>
+                    <option value="上海主板">上海主板</option>
+                    <option value="深圳主板">深圳主板</option>
+                    <option value="中小板">中小板</option>
+                    <option value="创业板">创业板</option>
+                </select>
+            </div>
+            
+            <!-- Signal Strength -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium">信号强度</label>
+                <select id="confidence-filter" class="input" onchange="applyFilters()">
+                    <option value="">全部信号</option>
+                    <option value="very_high">🔥 强买</option>
+                    <option value="high">✅ 买入</option>
+                    <option value="medium">👀 关注</option>
+                </select>
+            </div>
+            
+            <!-- Score Range -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium">评分范围</label>
+                <select id="score-filter" class="input" onchange="applyFilters()">
+                    <option value="">全部评分</option>
+                    <option value="0.9-1.0">0.9+ (卓越)</option>
+                    <option value="0.8-0.9">0.8-0.9 (优秀)</option>
+                    <option value="0.7-0.8">0.7-0.8 (良好)</option>
+                    <option value="0.6-0.7">0.6-0.7 (一般)</option>
+                </select>
+            </div>
+            
+            <!-- Price Range -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium">价格区间</label>
+                <select id="price-filter" class="input" onchange="applyFilters()">
+                    <option value="">全部价格</option>
+                    <option value="0-10">10元以下</option>
+                    <option value="10-30">10-30元</option>
+                    <option value="30-50">30-50元</option>
+                    <option value="50-100">50-100元</option>
+                    <option value="100-999">100元以上</option>
+                </select>
+            </div>
+            
+            <!-- Search -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium">搜索</label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"></i>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        class="input pl-9" 
+                        placeholder="代码/名称"
+                        oninput="applyFilters()"
+                    >
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Table -->
+<div class="card">
+    <!-- Table Toolbar -->
+    <div class="p-4 border-b">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <!-- Bulk Actions -->
+                <div class="flex items-center space-x-2">
+                    <input 
+                        type="checkbox" 
+                        id="select-all" 
+                        class="rounded border-gray-300"
+                        onchange="toggleSelectAll()"
+                    >
+                    <label for="select-all" class="text-sm font-medium">全选</label>
+                </div>
+                <div class="flex items-center space-x-2" id="bulk-actions" style="display: none;">
+                    <span class="text-sm text-muted-foreground" id="selected-count">已选择 0 项</span>
+                    <button class="button button-outline button-sm" onclick="bulkAddToWatchlist()">
+                        <i data-lucide="star" class="mr-1 h-3 w-3"></i>
+                        加入自选
+                    </button>
+                    <button class="button button-outline button-sm" onclick="bulkExport()">
+                        <i data-lucide="download" class="mr-1 h-3 w-3"></i>
+                        导出选中
+                    </button>
+                </div>
+            </div>
+            
+            <!-- View Options -->
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-muted-foreground">显示密度:</span>
+                <div class="flex rounded-lg border overflow-hidden">
+                    <button class="density-toggle active" data-density="comfortable" onclick="changeDensity('comfortable')">
+                        舒适
+                    </button>
+                    <button class="density-toggle" data-density="compact" onclick="changeDensity('compact')">
+                        紧凑
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Table Container -->
+    <div class="overflow-x-auto">
+        <table class="data-table" id="signals-table">
+            <thead>
+                <tr>
+                    <th class="w-12">
+                        <input type="checkbox" id="header-checkbox" class="rounded border-gray-300">
+                    </th>
+                    <th class="cursor-pointer hover:bg-muted/50" onclick="sortTable('symbol')">
+                        <div class="flex items-center space-x-1">
+                            <span>股票代码</span>
+                            <i data-lucide="arrow-up-down" class="h-3 w-3"></i>
+                        </div>
+                    </th>
+                    <th>股票名称</th>
+                    <th>市场</th>
+                    <th class="cursor-pointer hover:bg-muted/50" onclick="sortTable('current_price')">
+                        <div class="flex items-center space-x-1">
+                            <span>当前价格</span>
+                            <i data-lucide="arrow-up-down" class="h-3 w-3"></i>
+                        </div>
+                    </th>
+                    <th class="cursor-pointer hover:bg-muted/50" onclick="sortTable('total_score')">
+                        <div class="flex items-center space-x-1">
+                            <span>综合评分</span>
+                            <i data-lucide="arrow-up-down" class="h-3 w-3"></i>
+                        </div>
+                    </th>
+                    <th class="cursor-pointer hover:bg-muted/50" onclick="sortTable('auction_ratio')">
+                        <div class="flex items-center space-x-1">
+                            <span>竞价比率</span>
+                            <i data-lucide="arrow-up-down" class="h-3 w-3"></i>
+                        </div>
+                    </th>
+                    <th>信号强度</th>
+                    <th>入场价格</th>
+                    <th>目标价格</th>
+                    <th>止损价格</th>
+                    <th>预期收益</th>
+                    <th>状态</th>
+                    <th class="w-32">操作</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                {% for stock in recommendations %}
+                <tr class="table-row" data-stock-id="{{ stock.id }}">
+                    <td>
+                        <input type="checkbox" class="row-checkbox rounded border-gray-300" value="{{ stock.id }}">
+                    </td>
+                    <td>
+                        <div class="font-mono text-sm font-medium">{{ stock.symbol }}</div>
+                    </td>
+                    <td>
+                        <div class="font-medium">{{ stock.stock_name or '未知股票' }}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-secondary">{{ stock.market }}</span>
+                    </td>
+                    <td>
+                        <div class="font-semibold">¥{{ "%.2f"|format(stock.current_price) }}</div>
+                    </td>
+                    <td>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-blue-600">{{ "%.3f"|format(stock.total_score) }}</span>
+                            <div class="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-600 rounded-full" style="width: {{ (stock.total_score * 100)|round }}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="font-semibold {{ 'text-green-600' if stock.auction_ratio > 0 else 'text-red-600' }}">
+                            {{ "%+.1f"|format(stock.auction_ratio) }}%
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {{ 
+                            'badge-default' if stock.confidence == 'very_high' else 
+                            'badge-secondary' if stock.confidence == 'high' else 
+                            'badge-outline' 
+                        }}">
+                            {{ 
+                                '🔥 强买' if stock.confidence == 'very_high' else 
+                                '✅ 买入' if stock.confidence == 'high' else 
+                                '👀 关注' 
+                            }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="font-medium text-blue-600">¥{{ "%.2f"|format(stock.entry_price) }}</span>
+                    </td>
+                    <td>
+                        <span class="font-medium text-green-600">¥{{ "%.2f"|format(stock.target_price) }}</span>
+                    </td>
+                    <td>
+                        <span class="font-medium text-red-600">¥{{ "%.2f"|format(stock.stop_loss) }}</span>
+                    </td>
+                    <td>
+                        <div class="text-center">
+                            <div class="font-semibold text-green-600">
+                                +{{ "%.1f"|format(((stock.target_price / stock.current_price - 1) * 100)) }}%
+                            </div>
+                            <div class="text-xs text-muted-foreground">预期</div>
+                        </div>
+                    </td>
+                    <td>
+                        <select class="input py-1 text-xs" onchange="updateStockStatus({{ stock.id }}, this.value)">
+                            <option value="pending" {% if stock.status == 'pending' %}selected{% endif %}>待决策</option>
+                            <option value="bought" {% if stock.status == 'bought' %}selected{% endif %}>已买入</option>
+                            <option value="watching" {% if stock.status == 'watching' %}selected{% endif %}>观察中</option>
+                            <option value="ignored" {% if stock.status == 'ignored' %}selected{% endif %}>已忽略</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="flex items-center space-x-1">
+                            <button class="button button-ghost button-sm p-2" onclick="showStockDetail('{{ stock.symbol }}')" title="查看详情">
+                                <i data-lucide="eye" class="h-3 w-3"></i>
+                            </button>
+                            <button class="button button-ghost button-sm p-2" onclick="addToWatchlist('{{ stock.symbol }}')" title="加入自选">
+                                <i data-lucide="star" class="h-3 w-3"></i>
+                            </button>
+                            <button class="button button-ghost button-sm p-2" onclick="shareStock('{{ stock.symbol }}')" title="分享">
+                                <i data-lucide="share" class="h-3 w-3"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Table Footer -->
+    <div class="p-4 border-t">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-muted-foreground">
+                显示 <span id="showing-start">1</span>-<span id="showing-end">{{ recommendations|length }}</span> 
+                条，共 <span id="total-count">{{ recommendations|length }}</span> 条记录
+            </div>
+            <div class="flex items-center space-x-2">
+                <button class="button button-outline button-sm" id="prev-page" onclick="changePage(-1)" disabled>
+                    <i data-lucide="chevron-left" class="h-3 w-3"></i>
+                    上一页
+                </button>
+                <div class="flex items-center space-x-1">
+                    <span class="text-sm">第</span>
+                    <input type="number" id="current-page" value="1" min="1" max="1" class="input w-16 h-8 text-center text-sm">
+                    <span class="text-sm">页，共 <span id="total-pages">1</span> 页</span>
+                </div>
+                <button class="button button-outline button-sm" id="next-page" onclick="changePage(1)" disabled>
+                    下一页
+                    <i data-lucide="chevron-right" class="h-3 w-3"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Detail Modal -->
+<div id="stock-detail-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeStockDetailModal()"></div>
+    <div class="fixed left-1/2 top-1/2 z-50 w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 transform">
+        <div class="card m-4 max-h-[90vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b">
+                <div>
+                    <h3 class="text-lg font-semibold" id="modal-stock-title">股票详情</h3>
+                    <p class="text-sm text-muted-foreground" id="modal-stock-subtitle">详细分析和建议</p>
+                </div>
+                <button onclick="closeStockDetailModal()" class="button button-ghost p-2">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto max-h-[70vh] scrollbar-thin" id="modal-content">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Data management
+    let allStocks = {{ recommendations|tojson }};
+    let filteredStocks = [...allStocks];
+    let selectedStocks = new Set();
+    let currentDensity = 'comfortable';
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let sortField = null;
+    let sortDirection = 'asc';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDensityToggles();
+        updateTableDisplay();
+        updateStats();
+    });
+
+    // Density toggle initialization
+    function initializeDensityToggles() {
+        document.querySelectorAll('.density-toggle').forEach(toggle => {
+            toggle.className += ' px-3 py-1 text-xs font-medium border-r last:border-r-0 transition-colors';
+            if (toggle.classList.contains('active')) {
+                toggle.className += ' bg-primary text-primary-foreground';
+            } else {
+                toggle.className += ' bg-background hover:bg-accent';
+            }
+        });
+    }
+
+    // Change density
+    function changeDensity(density) {
+        currentDensity = density;
+        
+        // Update toggle states
+        document.querySelectorAll('.density-toggle').forEach(toggle => {
+            toggle.classList.remove('active');
+            toggle.className = toggle.className.replace(' bg-primary text-primary-foreground', ' bg-background hover:bg-accent');
+        });
+        
+        const activeToggle = document.querySelector(`[data-density="${density}"]`);
+        activeToggle.classList.add('active');
+        activeToggle.className = activeToggle.className.replace(' bg-background hover:bg-accent', ' bg-primary text-primary-foreground');
+        
+        // Apply density styles
+        const table = document.getElementById('signals-table');
+        if (density === 'compact') {
+            table.classList.add('table-compact');
+        } else {
+            table.classList.remove('table-compact');
+        }
+    }
+
+    // Filtering functions
+    function applyFilters() {
+        const market = document.getElementById('market-filter').value;
+        const confidence = document.getElementById('confidence-filter').value;
+        const scoreRange = document.getElementById('score-filter').value;
+        const priceRange = document.getElementById('price-filter').value;
+        const search = document.getElementById('search-input').value.toLowerCase();
+        
+        filteredStocks = allStocks.filter(stock => {
+            // Market filter
+            if (market && stock.market !== market) return false;
+            
+            // Confidence filter
+            if (confidence && stock.confidence !== confidence) return false;
+            
+            // Score range filter
+            if (scoreRange) {
+                const [min, max] = scoreRange.split('-').map(Number);
+                if (stock.total_score < min || stock.total_score > max) return false;
+            }
+            
+            // Price range filter
+            if (priceRange) {
+                const [min, max] = priceRange.split('-').map(Number);
+                if (stock.current_price < min || (max !== 999 && stock.current_price > max)) return false;
+            }
+            
+            // Search filter
+            if (search) {
+                const searchMatch = stock.symbol.toLowerCase().includes(search) || 
+                                  (stock.stock_name && stock.stock_name.toLowerCase().includes(search));
+                if (!searchMatch) return false;
+            }
+            
+            return true;
+        });
+        
+        currentPage = 1;
+        updateTableDisplay();
+        updateStats();
+    }
+
+    function clearFilters() {
+        document.getElementById('market-filter').value = '';
+        document.getElementById('confidence-filter').value = '';
+        document.getElementById('score-filter').value = '';
+        document.getElementById('price-filter').value = '';
+        document.getElementById('search-input').value = '';
+        
+        filteredStocks = [...allStocks];
+        currentPage = 1;
+        updateTableDisplay();
+        updateStats();
+        
+        showToast('筛选条件已清除', 'info');
+    }
+
+    function applyDateFilter() {
+        const newDate = document.getElementById('date-filter').value;
+        window.location.href = `{{ url_for('recommendations') }}?date=${newDate}`;
+    }
+
+    // Sorting
+    function sortTable(field) {
+        if (sortField === field) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDirection = 'asc';
+        }
+        
+        filteredStocks.sort((a, b) => {
+            let aVal = a[field];
+            let bVal = b[field];
+            
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+            
+            if (sortDirection === 'asc') {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+        
+        updateTableDisplay();
+    }
+
+    // Table display
+    function updateTableDisplay() {
+        const tbody = document.getElementById('table-body');
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageData = filteredStocks.slice(startIndex, endIndex);
+        
+        tbody.innerHTML = '';
+        
+        pageData.forEach(stock => {
+            const row = createTableRow(stock);
+            tbody.appendChild(row);
+        });
+        
+        updatePagination();
+    }
+
+    function createTableRow(stock) {
+        const tr = document.createElement('tr');
+        tr.className = 'table-row hover:bg-muted/30 transition-colors';
+        tr.dataset.stockId = stock.id;
+        
+        const confidenceMap = {
+            'very_high': { text: '🔥 强买', class: 'badge-default' },
+            'high': { text: '✅ 买入', class: 'badge-secondary' },
+            'medium': { text: '👀 关注', class: 'badge-outline' }
+        };
+        
+        const confidence = confidenceMap[stock.confidence] || confidenceMap['medium'];
+        const expectedReturn = ((stock.target_price / stock.current_price - 1) * 100);
+        
+        tr.innerHTML = `
+            <td>
+                <input type="checkbox" class="row-checkbox rounded border-gray-300" value="${stock.id}">
+            </td>
+            <td>
+                <div class="font-mono text-sm font-medium">${stock.symbol}</div>
+            </td>
+            <td>
+                <div class="font-medium">${stock.stock_name || '未知股票'}</div>
+            </td>
+            <td>
+                <span class="badge badge-secondary">${stock.market}</span>
+            </td>
+            <td>
+                <div class="font-semibold">¥${stock.current_price.toFixed(2)}</div>
+            </td>
+            <td>
+                <div class="flex items-center space-x-2">
+                    <span class="font-bold text-blue-600">${stock.total_score.toFixed(3)}</span>
+                    <div class="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-600 rounded-full" style="width: ${Math.round(stock.total_score * 100)}%"></div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <span class="font-semibold ${stock.auction_ratio > 0 ? 'text-green-600' : 'text-red-600'}">
+                    ${stock.auction_ratio > 0 ? '+' : ''}${stock.auction_ratio.toFixed(1)}%
+                </span>
+            </td>
+            <td>
+                <span class="badge ${confidence.class}">${confidence.text}</span>
+            </td>
+            <td>
+                <span class="font-medium text-blue-600">¥${stock.entry_price.toFixed(2)}</span>
+            </td>
+            <td>
+                <span class="font-medium text-green-600">¥${stock.target_price.toFixed(2)}</span>
+            </td>
+            <td>
+                <span class="font-medium text-red-600">¥${stock.stop_loss.toFixed(2)}</span>
+            </td>
+            <td>
+                <div class="text-center">
+                    <div class="font-semibold text-green-600">+${expectedReturn.toFixed(1)}%</div>
+                    <div class="text-xs text-muted-foreground">预期</div>
+                </div>
+            </td>
+            <td>
+                <select class="input py-1 text-xs" onchange="updateStockStatus(${stock.id}, this.value)">
+                    <option value="pending" ${stock.status === 'pending' ? 'selected' : ''}>待决策</option>
+                    <option value="bought" ${stock.status === 'bought' ? 'selected' : ''}>已买入</option>
+                    <option value="watching" ${stock.status === 'watching' ? 'selected' : ''}>观察中</option>
+                    <option value="ignored" ${stock.status === 'ignored' ? 'selected' : ''}>已忽略</option>
+                </select>
+            </td>
+            <td>
+                <div class="flex items-center space-x-1">
+                    <button class="button button-ghost button-sm p-2" onclick="showStockDetail('${stock.symbol}')" title="查看详情">
+                        <i data-lucide="eye" class="h-3 w-3"></i>
+                    </button>
+                    <button class="button button-ghost button-sm p-2" onclick="addToWatchlist('${stock.symbol}')" title="加入自选">
+                        <i data-lucide="star" class="h-3 w-3"></i>
+                    </button>
+                    <button class="button button-ghost button-sm p-2" onclick="shareStock('${stock.symbol}')" title="分享">
+                        <i data-lucide="share" class="h-3 w-3"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        // Add checkbox event listener
+        const checkbox = tr.querySelector('.row-checkbox');
+        checkbox.addEventListener('change', updateSelectedStocks);
+        
+        return tr;
+    }
+
+    // Pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage + 1;
+        const endIndex = Math.min(currentPage * itemsPerPage, filteredStocks.length);
+        
+        document.getElementById('showing-start').textContent = filteredStocks.length > 0 ? startIndex : 0;
+        document.getElementById('showing-end').textContent = endIndex;
+        document.getElementById('total-count').textContent = filteredStocks.length;
+        document.getElementById('current-page').value = currentPage;
+        document.getElementById('current-page').max = totalPages;
+        document.getElementById('total-pages').textContent = totalPages;
+        
+        document.getElementById('prev-page').disabled = currentPage <= 1;
+        document.getElementById('next-page').disabled = currentPage >= totalPages;
+    }
+
+    function changePage(direction) {
+        const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
+        const newPage = currentPage + direction;
+        
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            updateTableDisplay();
+        }
+    }
+
+    // Selection management
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+        
+        updateSelectedStocks();
+    }
+
+    function updateSelectedStocks() {
+        const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+        selectedStocks.clear();
+        
+        checkboxes.forEach(checkbox => {
+            selectedStocks.add(parseInt(checkbox.value));
+        });
+        
+        const count = selectedStocks.size;
+        const bulkActions = document.getElementById('bulk-actions');
+        const selectedCount = document.getElementById('selected-count');
+        
+        if (count > 0) {
+            bulkActions.style.display = 'flex';
+            selectedCount.textContent = `已选择 ${count} 项`;
+        } else {
+            bulkActions.style.display = 'none';
+        }
+        
+        // Update select all checkbox
+        const allCheckboxes = document.querySelectorAll('.row-checkbox');
+        const selectAll = document.getElementById('select-all');
+        selectAll.checked = allCheckboxes.length > 0 && checkboxes.length === allCheckboxes.length;
+        selectAll.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+    }
+
+    // Actions
+    async function updateStockStatus(stockId, newStatus) {
+        try {
+            const response = await makeRequest('/api/update_stock_status', 'POST', {
+                id: stockId,
+                status: newStatus
+            });
+            
+            if (response.success) {
+                showToast('状态已更新', 'success');
+                // Update local data
+                const stock = allStocks.find(s => s.id === stockId);
+                if (stock) {
+                    stock.status = newStatus;
+                }
+            } else {
+                showToast(response.message, 'error');
+            }
+        } catch (error) {
+            showToast('更新失败', 'error');
+        }
+    }
+
+    function showStockDetail(symbol) {
+        const stock = allStocks.find(s => s.symbol === symbol);
+        if (!stock) return;
+        
+        const modal = document.getElementById('stock-detail-modal');
+        const title = document.getElementById('modal-stock-title');
+        const subtitle = document.getElementById('modal-stock-subtitle');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = `${stock.symbol} - ${stock.stock_name || '未知股票'}`;
+        subtitle.textContent = `综合评分: ${stock.total_score.toFixed(3)} | 信号强度: ${
+            stock.confidence === 'very_high' ? '强买' :
+            stock.confidence === 'high' ? '买入' : '关注'
+        }`;
+        
+        content.innerHTML = generateStockDetailHTML(stock);
+        modal.classList.remove('hidden');
+        
+        // Initialize icons in modal
+        lucide.createIcons();
+    }
+
+    function generateStockDetailHTML(stock) {
+        return `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <!-- Basic Info -->
+                    <div class="card p-4">
+                        <h4 class="font-semibold mb-3 flex items-center">
+                            <i data-lucide="info" class="mr-2 h-4 w-4"></i>
+                            基本信息
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">股票代码:</span>
+                                <span class="font-mono font-medium">${stock.symbol}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">股票名称:</span>
+                                <span class="font-medium">${stock.stock_name || '未知'}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">所属市场:</span>
+                                <span class="badge badge-secondary">${stock.market}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">当前价格:</span>
+                                <span class="font-bold text-lg">¥${stock.current_price.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Trading Signals -->
+                    <div class="card p-4">
+                        <h4 class="font-semibold mb-3 flex items-center">
+                            <i data-lucide="target" class="mr-2 h-4 w-4"></i>
+                            交易信号
+                        </h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-muted-foreground">建议入场:</span>
+                                <span class="font-semibold text-blue-600">¥${stock.entry_price.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-muted-foreground">目标位:</span>
+                                <span class="font-semibold text-green-600">¥${stock.target_price.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-muted-foreground">止损位:</span>
+                                <span class="font-semibold text-red-600">¥${stock.stop_loss.toFixed(2)}</span>
+                            </div>
+                            <div class="pt-2 border-t">
+                                <div class="text-sm text-muted-foreground mb-1">预期收益:</div>
+                                <div class="font-bold text-green-600 text-lg">
+                                    +${((stock.target_price / stock.current_price - 1) * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <!-- Score Breakdown -->
+                    <div class="card p-4">
+                        <h4 class="font-semibold mb-3 flex items-center">
+                            <i data-lucide="bar-chart-3" class="mr-2 h-4 w-4"></i>
+                            评分详情
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm text-muted-foreground">综合评分</span>
+                                    <span class="font-bold text-blue-600">${stock.total_score.toFixed(3)}</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.round(stock.total_score * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm text-muted-foreground">技术评分</span>
+                                    <span class="font-semibold text-green-600">${stock.tech_score.toFixed(3)}</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: ${Math.round(stock.tech_score * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm text-muted-foreground">竞价评分</span>
+                                    <span class="font-semibold text-purple-600">${stock.auction_score.toFixed(3)}</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-purple-600 h-2 rounded-full" style="width: ${Math.round(stock.auction_score * 100)}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Analysis -->
+                    <div class="card p-4">
+                        <h4 class="font-semibold mb-3 flex items-center">
+                            <i data-lucide="shield" class="mr-2 h-4 w-4"></i>
+                            风险分析
+                        </h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-muted-foreground">潜在亏损:</span>
+                                <span class="font-semibold text-red-600">
+                                    ${((stock.stop_loss / stock.current_price - 1) * 100).toFixed(1)}%
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-muted-foreground">风险收益比:</span>
+                                <span class="font-semibold">
+                                    1:${(Math.abs((stock.target_price - stock.current_price) / (stock.current_price - stock.stop_loss))).toFixed(1)}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-muted-foreground">竞价表现:</span>
+                                <span class="font-semibold ${stock.auction_ratio > 0 ? 'text-green-600' : 'text-red-600'}">
+                                    ${stock.auction_ratio > 0 ? '+' : ''}${stock.auction_ratio.toFixed(1)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Strategy Recommendation -->
+            <div class="card p-4 mt-6">
+                <h4 class="font-semibold mb-3 flex items-center">
+                    <i data-lucide="lightbulb" class="mr-2 h-4 w-4"></i>
+                    策略建议
+                </h4>
+                <p class="text-sm text-muted-foreground">${stock.strategy}</p>
+            </div>
+        `;
+    }
+
+    function closeStockDetailModal() {
+        document.getElementById('stock-detail-modal').classList.add('hidden');
+    }
+
+    function addToWatchlist(symbol) {
+        showToast(`${symbol} 已加入自选`, 'success');
+    }
+
+    function shareStock(symbol) {
+        if (navigator.share) {
+            navigator.share({
+                title: `股票推荐: ${symbol}`,
+                text: `CChanTrader AI 推荐关注 ${symbol}`,
+                url: window.location.href
+            });
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(`${symbol} - ${window.location.href}`);
+            showToast('分享链接已复制到剪贴板', 'info');
+        }
+    }
+
+    function bulkAddToWatchlist() {
+        const count = selectedStocks.size;
+        showToast(`已将 ${count} 只股票加入自选`, 'success');
+        selectedStocks.clear();
+        updateSelectedStocks();
+    }
+
+    function bulkExport() {
+        const selectedData = allStocks.filter(stock => selectedStocks.has(stock.id));
+        exportStockData(selectedData);
+        showToast(`已导出 ${selectedData.length} 只股票`, 'success');
+    }
+
+    function exportData() {
+        exportStockData(filteredStocks);
+    }
+
+    function exportStockData(data) {
+        const csvContent = generateCSV(data);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `选股结果_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function generateCSV(stocks) {
+        const headers = [
+            '股票代码', '股票名称', '市场', '当前价格', '综合评分', '技术评分', 
+            '竞价评分', '竞价比率', '信号强度', '入场价格', '目标价格', '止损价格', 
+            '预期收益', '策略建议'
+        ];
+        
+        const rows = stocks.map(stock => [
+            stock.symbol,
+            stock.stock_name || '未知',
+            stock.market,
+            stock.current_price.toFixed(2),
+            stock.total_score.toFixed(3),
+            stock.tech_score.toFixed(3),
+            stock.auction_score.toFixed(3),
+            stock.auction_ratio.toFixed(1) + '%',
+            stock.confidence === 'very_high' ? '强买' : 
+            stock.confidence === 'high' ? '买入' : '关注',
+            stock.entry_price.toFixed(2),
+            stock.target_price.toFixed(2),
+            stock.stop_loss.toFixed(2),
+            ((stock.target_price / stock.current_price - 1) * 100).toFixed(1) + '%',
+            stock.strategy
+        ]);
+        
+        return [headers, ...rows].map(row => 
+            row.map(field => `"${field}"`).join(',')
+        ).join('\n');
+    }
+
+    function updateStats() {
+        document.getElementById('total-signals').textContent = filteredStocks.length;
+        document.getElementById('strong-buy-count').textContent = 
+            filteredStocks.filter(s => s.confidence === 'very_high').length;
+        
+        const avgScore = filteredStocks.length > 0 ? 
+            filteredStocks.reduce((sum, s) => sum + s.total_score, 0) / filteredStocks.length : 0;
+        document.getElementById('avg-score').textContent = avgScore.toFixed(3);
+        
+        const industryCount = [...new Set(filteredStocks.map(s => s.market))].length;
+        document.getElementById('industry-count').textContent = industryCount;
+    }
+
+    async function refreshSignals() {
+        showToast('正在刷新数据...', 'info');
+        try {
+            const response = await makeRequest('/api/run_analysis', 'POST');
+            if (response.success) {
+                showToast(response.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showToast(response.message, 'error');
+            }
+        } catch (error) {
+            showToast('刷新失败', 'error');
+        }
+    }
+
+    async function runAnalysis() {
+        showToast('开始执行选股分析...', 'info');
+        try {
+            const response = await makeRequest('/api/run_analysis', 'POST');
+            if (response.success) {
+                showToast(response.message, 'success');
+                setTimeout(() => location.reload(), 3000);
+            } else {
+                showToast(response.message, 'error');
+            }
+        } catch (error) {
+            showToast('分析失败', 'error');
+        }
+    }
+
+    // Initialize icons
+    lucide.createIcons();
+
+    // Add compact table styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .table-compact td,
+        .table-compact th {
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .table-compact .font-semibold {
+            font-size: 0.875rem;
+        }
+        
+        .table-compact .badge {
+            font-size: 0.625rem;
+            padding: 0.125rem 0.5rem;
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

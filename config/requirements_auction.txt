@@ -1,0 +1,30 @@
+# A股集合竞价数据获取所需依赖包
+
+# 核心数据源
+akshare>=1.17.0          # AKShare 金融数据接口
+baostock>=0.8.8          # BaoStock 免费股票数据接口
+
+# 数据处理
+pandas>=1.3.0            # 数据分析库
+numpy>=1.21.0            # 数值计算库
+
+# 工具库
+tqdm>=4.62.0             # 进度条显示
+python-dotenv>=0.19.0    # 环境变量管理
+
+# 可选：数据可视化
+matplotlib>=3.5.0        # 基础绘图库
+seaborn>=0.11.0          # 统计可视化
+plotly>=5.0.0            # 交互式图表
+
+# 可选：其他数据源
+yfinance>=0.1.70         # Yahoo Finance数据
+tushare>=1.2.89          # TuShare专业金融数据
+
+# 可选：数据存储
+sqlalchemy>=1.4.0        # 数据库ORM
+pymongo>=3.12.0          # MongoDB数据库
+redis>=4.0.0             # Redis缓存
+
+# 安装命令:
+# pip install -r requirements_auction.txt

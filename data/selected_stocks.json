@@ -1,0 +1,20 @@
+[
+  {
+    "symbol": "sh.600000",
+    "name": "浦发银行",
+    "entry": 13.55,
+    "stop": 12.8725,
+    "signal": "2_buy",
+    "volume_factor": 1.59,
+    "trend": "up"
+  },
+  {
+    "symbol": "sh.600006",
+    "name": "东风股份",
+    "entry": 7.24,
+    "stop": 6.878,
+    "signal": "2_buy",
+    "volume_factor": 1.38,
+    "trend": "up"
+  }
+]

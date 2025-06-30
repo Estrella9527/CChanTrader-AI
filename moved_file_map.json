@@ -1,0 +1,23 @@
+{
+  "templates/config_modern.html": "frontend/templates/config_modern.html",
+  "templates/base_modern.html": "frontend/templates/base_modern.html",
+  "templates/index.html": "frontend/templates/index.html",
+  "templates/recommendations.html": "frontend/templates/recommendations.html",
+  "templates/dashboard_shadcn.html": "frontend/templates/dashboard_shadcn.html",
+  "templates/strategy_config_shadcn.html": "frontend/templates/strategy_config_shadcn.html",
+  "templates/base.html": "frontend/templates/base.html",
+  "templates/stock_detail.html": "frontend/templates/stock_detail.html",
+  "templates/recommendations_modern.html": "frontend/templates/recommendations_modern.html",
+  "templates/signals_shadcn.html": "frontend/templates/signals_shadcn.html",
+  "templates/config.html": "frontend/templates/config.html",
+  "templates/index_modern.html": "frontend/templates/index_modern.html",
+  "templates/base_shadcn.html": "frontend/templates/base_shadcn.html",
+  "static/js/pick_modal.js": "frontend/static/js/pick_modal.js",
+  "web_app.py": "backend/app.py",
+  "optimized_stock_analyzer.py": "analysis/optimized_stock_analyzer.py",
+  "deep_stock_analyzer.py": "analysis/deep_stock_analyzer.py",
+  "trading_day_scheduler.py": "analysis/trading_day_scheduler.py",
+  "email_config.py": "backend/services/email_config.py",
+  "explain_builder.py": "backend/explain_builder.py",
+  "cchan_web.db": "data/cchan_web.db"
+}

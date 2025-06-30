@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Alpha Engine - CChanTrader AI{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                    keyframes: {
+                        "accordion-down": {
+                            from: { height: 0 },
+                            to: { height: "var(--radix-accordion-content-height)" },
+                        },
+                        "accordion-up": {
+                            from: { height: "var(--radix-accordion-content-height)" },
+                            to: { height: 0 },
+                        },
+                        "slide-down": {
+                            from: { height: 0, opacity: 0 },
+                            to: { height: "var(--radix-collapsible-content-height)", opacity: 1 },
+                        },
+                        "slide-up": {
+                            from: { height: "var(--radix-collapsible-content-height)", opacity: 1 },
+                            to: { height: 0, opacity: 0 },
+                        },
+                        "fade-in": {
+                            from: { opacity: 0, transform: "translateY(10px)" },
+                            to: { opacity: 1, transform: "translateY(0)" },
+                        },
+                        "fade-out": {
+                            from: { opacity: 1, transform: "translateY(0)" },
+                            to: { opacity: 0, transform: "translateY(10px)" },
+                        },
+                    },
+                    animation: {
+                        "accordion-down": "accordion-down 0.2s ease-out",
+                        "accordion-up": "accordion-up 0.2s ease-out",
+                        "slide-down": "slide-down 0.2s ease-out",
+                        "slide-up": "slide-up 0.2s ease-out",
+                        "fade-in": "fade-in 0.3s ease-out",
+                        "fade-out": "fade-out 0.2s ease-in",
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <!-- CSS Variables for shadcn/ui -->
+    <style>
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 84% 4.9%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 84% 4.9%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+            --radius: 0.5rem;
+        }
+        
+        .dark {
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 217.2 91.2% 59.8%;
+            --primary-foreground: 222.2 84% 4.9%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 224.3 76.3% 94.1%;
+        }
+        
+        * {
+            border-color: hsl(var(--border));
+        }
+        
+        body {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+        
+        /* Scrollbar Styling */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: hsl(var(--muted));
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground) / 0.3);
+            border-radius: 2px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--muted-foreground) / 0.5);
+        }
+        
+        /* Custom Components */
+        .card {
+            background-color: hsl(var(--card));
+            color: hsl(var(--card-foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+        }
+        
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius));
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            outline: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .button:focus-visible {
+            outline: 2px solid hsl(var(--ring));
+            outline-offset: 2px;
+        }
+        
+        .button:disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        
+        .button-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            height: 2.25rem;
+            padding: 0 1rem;
+        }
+        
+        .button-primary:hover {
+            background-color: hsl(var(--primary) / 0.9);
+        }
+        
+        .button-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+            height: 2.25rem;
+            padding: 0 1rem;
+        }
+        
+        .button-secondary:hover {
+            background-color: hsl(var(--secondary) / 0.8);
+        }
+        
+        .button-ghost {
+            background-color: transparent;
+            color: hsl(var(--foreground));
+            height: 2.25rem;
+            padding: 0 1rem;
+        }
+        
+        .button-ghost:hover {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+        
+        .button-outline {
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            height: 2.25rem;
+            padding: 0 1rem;
+        }
+        
+        .button-outline:hover {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+        
+        .input {
+            display: flex;
+            height: 2.25rem;
+            width: 100%;
+            border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+            padding: 0 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .input:focus {
+            outline: 2px solid hsl(var(--ring));
+            outline-offset: 2px;
+        }
+        
+        .input:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: calc(var(--radius));
+            padding: 0.125rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            outline: none;
+            border: 1px solid transparent;
+        }
+        
+        .badge-default {
+            border-color: transparent;
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        
+        .badge-secondary {
+            border-color: transparent;
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+        
+        .badge-destructive {
+            border-color: transparent;
+            background-color: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+        
+        .badge-outline {
+            color: hsl(var(--foreground));
+            border-color: hsl(var(--border));
+        }
+        
+        /* Layout Components */
+        .sidebar-collapsed {
+            width: 4rem;
+        }
+        
+        .sidebar-expanded {
+            width: 16rem;
+        }
+        
+        .main-content {
+            transition: margin-left 0.3s ease;
+        }
+        
+        .main-content-collapsed {
+            margin-left: 4rem;
+        }
+        
+        .main-content-expanded {
+            margin-left: 16rem;
+        }
+        
+        /* Data Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border-bottom: 1px solid hsl(var(--border));
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+        
+        .data-table th {
+            background-color: hsl(var(--muted) / 0.5);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            color: hsl(var(--muted-foreground));
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: hsl(var(--muted) / 0.3);
+        }
+        
+        /* Metrics Cards */
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.5));
+        }
+        
+        /* Animation Classes */
+        .animate-in {
+            animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-out {
+            animation: fade-out 0.2s ease-in;
+        }
+        
+        /* Status Indicators */
+        .status-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-success {
+            background-color: #22c55e;
+        }
+        
+        .status-warning {
+            background-color: #f59e0b;
+        }
+        
+        .status-error {
+            background-color: #ef4444;
+        }
+        
+        .status-info {
+            background-color: #3b82f6;
+        }
+    </style>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Framer Motion (via CDN) -->
+    <script src="https://unpkg.com/framer-motion@10/dist/framer-motion.js"></script>
+</head>
+
+<body class="h-full bg-background font-sans antialiased">
+    <div id="root" class="h-full">
+        <!-- Header -->
+        <header class="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+            <div class="flex h-16 items-center justify-between px-6">
+                <!-- Logo and Title -->
+                <div class="flex items-center space-x-4">
+                    <button id="sidebar-toggle" class="button button-ghost p-2 lg:hidden">
+                        <i data-lucide="menu" class="h-5 w-5"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div class="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                            <i data-lucide="activity" class="h-5 w-5 text-primary-foreground"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-semibold">Smart Alpha Engine</h1>
+                            <p class="text-xs text-muted-foreground">CChanTrader AI</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Global Actions -->
+                <div class="flex items-center space-x-2">
+                    <!-- Search -->
+                    <div class="relative hidden md:block">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"></i>
+                        <input 
+                            type="text" 
+                            placeholder="搜索..." 
+                            class="input pl-9 w-64"
+                            id="global-search"
+                        >
+                    </div>
+                    
+                    <!-- Actions -->
+                    <button class="button button-outline">
+                        <i data-lucide="download" class="mr-2 h-4 w-4"></i>
+                        同步数据
+                    </button>
+                    <button class="button button-primary">
+                        <i data-lucide="plus" class="mr-2 h-4 w-4"></i>
+                        创建策略
+                    </button>
+                    
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="button button-ghost p-2">
+                        <i data-lucide="sun" class="h-4 w-4 dark:hidden"></i>
+                        <i data-lucide="moon" class="h-4 w-4 hidden dark:block"></i>
+                    </button>
+                    
+                    <!-- User Menu -->
+                    <div class="relative">
+                        <button id="user-menu-trigger" class="flex items-center space-x-2 button button-ghost p-2">
+                            <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <i data-lucide="user" class="h-4 w-4"></i>
+                            </div>
+                        </button>
+                        <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 card p-1 hidden">
+                            <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-accent text-sm">
+                                <i data-lucide="user" class="h-4 w-4"></i>
+                                <span>个人资料</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-accent text-sm">
+                                <i data-lucide="settings" class="h-4 w-4"></i>
+                                <span>系统设置</span>
+                            </a>
+                            <hr class="my-1 border-border">
+                            <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-accent text-sm text-destructive">
+                                <i data-lucide="log-out" class="h-4 w-4"></i>
+                                <span>退出登录</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed left-0 top-16 bottom-0 z-40 sidebar-expanded bg-card border-r transition-all duration-300">
+            <nav class="h-full p-4 overflow-y-auto scrollbar-thin">
+                <div class="space-y-2">
+                    <!-- Dashboard -->
+                    <a href="{{ url_for('index') }}" class="nav-item {{ 'nav-item-active' if request.endpoint == 'index' else '' }}">
+                        <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                        <span class="nav-label">仪表盘</span>
+                    </a>
+                    
+                    <!-- Strategies -->
+                    <div class="nav-group">
+                        <button class="nav-item nav-group-trigger">
+                            <i data-lucide="brain" class="h-4 w-4"></i>
+                            <span class="nav-label">策略管理</span>
+                            <i data-lucide="chevron-right" class="h-4 w-4 ml-auto nav-chevron"></i>
+                        </button>
+                        <div class="nav-group-content">
+                            <a href="{{ url_for('recommendations') }}" class="nav-sub-item {{ 'nav-item-active' if request.endpoint == 'recommendations' else '' }}">
+                                <i data-lucide="target" class="h-4 w-4"></i>
+                                <span class="nav-label">选股结果</span>
+                            </a>
+                            <a href="#" class="nav-sub-item">
+                                <i data-lucide="settings" class="h-4 w-4"></i>
+                                <span class="nav-label">策略配置</span>
+                            </a>
+                            <a href="#" class="nav-sub-item">
+                                <i data-lucide="bar-chart-3" class="h-4 w-4"></i>
+                                <span class="nav-label">回测分析</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Factors -->
+                    <div class="nav-group">
+                        <button class="nav-item nav-group-trigger">
+                            <i data-lucide="layers" class="h-4 w-4"></i>
+                            <span class="nav-label">因子中心</span>
+                            <i data-lucide="chevron-right" class="h-4 w-4 ml-auto nav-chevron"></i>
+                        </button>
+                        <div class="nav-group-content">
+                            <a href="#" class="nav-sub-item">
+                                <i data-lucide="trending-up" class="h-4 w-4"></i>
+                                <span class="nav-label">技术因子</span>
+                            </a>
+                            <a href="#" class="nav-sub-item">
+                                <i data-lucide="pie-chart" class="h-4 w-4"></i>
+                                <span class="nav-label">基本面因子</span>
+                            </a>
+                            <a href="#" class="nav-sub-item">
+                                <i data-lucide="zap" class="h-4 w-4"></i>
+                                <span class="nav-label">自定义因子</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Center -->
+                    <a href="#" class="nav-item">
+                        <i data-lucide="database" class="h-4 w-4"></i>
+                        <span class="nav-label">数据中心</span>
+                    </a>
+                    
+                    <!-- Configuration -->
+                    <a href="{{ url_for('config') }}" class="nav-item {{ 'nav-item-active' if request.endpoint == 'config' else '' }}">
+                        <i data-lucide="settings" class="h-4 w-4"></i>
+                        <span class="nav-label">系统配置</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main id="main-content" class="main-content-expanded pt-16 min-h-screen">
+            <div class="p-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+        
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed top-20 right-6 z-50 space-y-2"></div>
+        
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm hidden">
+            <div class="flex items-center justify-center h-full">
+                <div class="card p-6 flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                    <span class="text-sm font-medium">加载中...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation Styles
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply navigation styles
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (!item.classList.contains('nav-group-trigger')) {
+                    item.className += ' flex items-center space-x-3 w-full p-3 rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground';
+                    if (item.classList.contains('nav-item-active')) {
+                        item.className += ' bg-accent text-accent-foreground';
+                    }
+                }
+            });
+            
+            const navSubItems = document.querySelectorAll('.nav-sub-item');
+            navSubItems.forEach(item => {
+                item.className += ' flex items-center space-x-3 w-full p-2 ml-6 rounded-lg text-sm transition-colors hover:bg-accent hover:text-accent-foreground';
+                if (item.classList.contains('nav-item-active')) {
+                    item.className += ' bg-accent text-accent-foreground';
+                }
+            });
+            
+            const navGroupTriggers = document.querySelectorAll('.nav-group-trigger');
+            navGroupTriggers.forEach(trigger => {
+                trigger.className += ' flex items-center space-x-3 w-full p-3 rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground';
+            });
+            
+            const navGroupContents = document.querySelectorAll('.nav-group-content');
+            navGroupContents.forEach(content => {
+                content.className += ' mt-2 space-y-1 overflow-hidden transition-all duration-200';
+                content.style.maxHeight = '0';
+                content.style.opacity = '0';
+            });
+        });
+
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        let sidebarCollapsed = false;
+
+        function toggleSidebar() {
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.remove('sidebar-expanded');
+                sidebar.classList.add('sidebar-collapsed');
+                mainContent.classList.remove('main-content-expanded');
+                mainContent.classList.add('main-content-collapsed');
+                
+                // Hide nav labels
+                document.querySelectorAll('.nav-label').forEach(label => {
+                    label.style.display = 'none';
+                });
+                document.querySelectorAll('.nav-chevron').forEach(chevron => {
+                    chevron.style.display = 'none';
+                });
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('sidebar-expanded');
+                mainContent.classList.remove('main-content-collapsed');
+                mainContent.classList.add('main-content-expanded');
+                
+                // Show nav labels
+                document.querySelectorAll('.nav-label').forEach(label => {
+                    label.style.display = 'block';
+                });
+                document.querySelectorAll('.nav-chevron').forEach(chevron => {
+                    chevron.style.display = 'block';
+                });
+            }
+        }
+
+        sidebarToggle?.addEventListener('click', toggleSidebar);
+
+        // Navigation group functionality
+        document.querySelectorAll('.nav-group-trigger').forEach(trigger => {
+            trigger.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                const chevron = this.querySelector('.nav-chevron');
+                const isExpanded = content.style.maxHeight !== '0px';
+                
+                if (isExpanded) {
+                    content.style.maxHeight = '0';
+                    content.style.opacity = '0';
+                    chevron.style.transform = 'rotate(0deg)';
+                } else {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.style.opacity = '1';
+                    chevron.style.transform = 'rotate(90deg)';
+                }
+            });
+        });
+
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlElement = document.documentElement;
+
+        function toggleTheme() {
+            htmlElement.classList.toggle('dark');
+            const isDark = htmlElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            htmlElement.classList.add('dark');
+        }
+
+        themeToggle?.addEventListener('click', toggleTheme);
+
+        // User menu
+        const userMenuTrigger = document.getElementById('user-menu-trigger');
+        const userMenu = document.getElementById('user-menu');
+
+        userMenuTrigger?.addEventListener('click', function() {
+            userMenu.classList.toggle('hidden');
+        });
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!userMenuTrigger?.contains(event.target) && !userMenu?.contains(event.target)) {
+                userMenu?.classList.add('hidden');
+            }
+        });
+
+        // Toast notification system
+        function showToast(message, type = 'info', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = `card p-4 animate-in border-l-4 ${
+                type === 'success' ? 'border-l-green-500' :
+                type === 'error' ? 'border-l-red-500' :
+                type === 'warning' ? 'border-l-yellow-500' :
+                'border-l-blue-500'
+            }`;
+            
+            const iconMap = {
+                success: 'check-circle',
+                error: 'x-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+            
+            toast.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="${iconMap[type]}" class="h-5 w-5 mt-0.5 ${
+                        type === 'success' ? 'text-green-600' :
+                        type === 'error' ? 'text-red-600' :
+                        type === 'warning' ? 'text-yellow-600' :
+                        'text-blue-600'
+                    }"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-muted-foreground hover:text-foreground">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('animate-in');
+                    toast.classList.add('animate-out');
+                    setTimeout(() => toast.remove(), 200);
+                }
+            }, duration);
+        }
+
+        // Loading overlay
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        // Global search functionality
+        const globalSearch = document.getElementById('global-search');
+        globalSearch?.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            // Implement search logic here
+            console.log('Search query:', query);
+        });
+
+        // Initialize icons
+        lucide.createIcons();
+
+        // API request helper
+        async function makeRequest(url, method = 'GET', data = null) {
+            showLoading();
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Request failed');
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('Request failed:', error);
+                showToast(error.message || '网络请求失败', 'error');
+                return { success: false, message: error.message };
+            } finally {
+                hideLoading();
+            }
+        }
+
+        {% block extra_js %}{% endblock %}
+    </script>
+</body>
+</html>

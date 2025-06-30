@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CChanTrader-AI 智能交易管理平台{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- HTMX / Hyperscript / Chart.js -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="{{ url_for('static', filename='js/pick_modal.js') }}"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 222.2 47.4% 11.2%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 222.2 84% 4.9%;
+            --radius: 0.5rem;
+        }
+
+        * {
+            border-color: hsl(var(--border));
+        }
+
+        body {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
+
+        /* Shadcn/ui Components */
+        .card {
+            background-color: hsl(var(--card));
+            color: hsl(var(--card-foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: calc(var(--radius));
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .button-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            height: 2rem;
+        }
+
+        .button:disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .button-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+
+        .button-primary:hover {
+            background-color: hsl(var(--primary) / 0.9);
+        }
+
+        .button-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+
+        .button-secondary:hover {
+            background-color: hsl(var(--secondary) / 0.8);
+        }
+
+        .button-outline {
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+        }
+
+        .button-outline:hover {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+
+        .button-ghost {
+            background-color: transparent;
+        }
+
+        .button-ghost:hover {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+
+        .button-destructive {
+            background-color: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+
+        .button-destructive:hover {
+            background-color: hsl(var(--destructive) / 0.9);
+        }
+
+        .input {
+            display: flex;
+            height: 2.5rem;
+            width: 100%;
+            border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+        }
+
+        .select {
+            display: flex;
+            height: 2.5rem;
+            width: 100%;
+            border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .select:focus {
+            outline: none;
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: calc(var(--radius) / 2);
+            padding: 0.125rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .badge-default {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+
+        .badge-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+
+        .badge-destructive {
+            background-color: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+
+        .badge-outline {
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+        }
+
+        .alert {
+            position: relative;
+            width: 100%;
+            border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border));
+            padding: 1rem;
+        }
+
+        .alert-default {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        .alert-destructive {
+            border-color: hsl(var(--destructive) / 0.5);
+            color: hsl(var(--destructive));
+            background-color: hsl(var(--destructive) / 0.1);
+        }
+
+        /* Custom styles */
+        .status-running { color: #22c55e; }
+        .status-stopped { color: #ef4444; }
+        .status-warning { color: #f59e0b; }
+
+        .navbar {
+            background-color: hsl(var(--background));
+            border-bottom: 1px solid hsl(var(--border));
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: hsl(var(--foreground));
+            text-decoration: none;
+        }
+
+        .nav-link {
+            color: hsl(var(--muted-foreground));
+            text-decoration: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: calc(var(--radius));
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: hsl(var(--foreground));
+            background-color: hsl(var(--accent));
+        }
+
+        .tab-trigger {
+            background-color: transparent;
+            border: none;
+            color: hsl(var(--muted-foreground));
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-trigger:hover {
+            color: hsl(var(--foreground));
+        }
+
+        .tab-trigger.active {
+            color: hsl(var(--foreground));
+            border-bottom-color: hsl(var(--primary));
+        }
+
+        .stock-card {
+            border-left: 4px solid hsl(var(--primary));
+        }
+
+        .stock-card.high-confidence {
+            border-left-color: #22c55e;
+        }
+
+        .stock-card.medium-confidence {
+            border-left-color: #f59e0b;
+        }
+
+        .price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: hsl(var(--primary));
+        }
+
+        .score {
+            background: linear-gradient(45deg, hsl(var(--primary)), #3b82f6);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Animation utilities */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.15);
+        }
+
+        /* Loading state */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="max-w-full px-4 mx-auto flex items-center justify-between">
+            <a class="navbar-brand flex items-center space-x-2" href="{{ url_for('index') }}">
+                <i data-lucide="trending-up" class="w-6 h-6"></i>
+                <span>CChanTrader-AI</span>
+            </a>
+            
+            <div class="hidden md:flex items-center space-x-1">
+                <a class="nav-link flex items-center space-x-2 {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                    <span>首页</span>
+                </a>
+                <a class="nav-link flex items-center space-x-2 {% if request.endpoint == 'recommendations' %}active{% endif %}" href="{{ url_for('recommendations') }}">
+                    <i data-lucide="star" class="w-4 h-4"></i>
+                    <span>股票推荐</span>
+                </a>
+                <a class="nav-link flex items-center space-x-2 {% if request.endpoint == 'config' %}active{% endif %}" href="{{ url_for('config') }}">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    <span>系统配置</span>
+                </a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 text-sm text-gray-600">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    <span id="current-time"></span>
+                </div>
+                <div class="relative">
+                    <button class="button button-ghost p-2" onclick="toggleUserMenu()">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </button>
+                    <div id="user-menu" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden">
+                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+                            用户设置
+                        </a>
+                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i data-lucide="help-circle" class="w-4 h-4 mr-2"></i>
+                            帮助文档
+                        </a>
+                        <hr class="my-1">
+                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                            退出系统
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="max-w-full mx-auto px-4 py-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {{ 'alert-destructive' if category == 'error' else 'alert-default' }} mt-4 fade-in" role="alert">
+                        {{ message }}
+                        <button type="button" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentElement.remove()">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+    
+    <!-- 通用JavaScript -->
+    <script>
+        // 初始化Lucide图标
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+        
+        // 切换用户菜单
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // 点击外部关闭菜单
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('user-menu');
+            const button = event.target.closest('button');
+            
+            if (!button || button.getAttribute('onclick') !== 'toggleUserMenu()') {
+                menu.classList.add('hidden');
+            }
+        });
+        
+        // 更新当前时间
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        // 每秒更新时间
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // 通用AJAX请求函数
+        function makeRequest(url, method = 'GET', data = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            return fetch(url, options)
+                .then(response => response.json())
+                .catch(error => {
+                    console.error('请求失败:', error);
+                    return { success: false, message: '网络请求失败' };
+                });
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'default') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} fixed top-4 right-4 z-50 min-w-80 fade-in`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentElement.remove()">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // 重新初始化图标
+            lucide.createIcons();
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }
+        
+        // 显示/隐藏加载状态
+        function toggleLoading(element, show = true) {
+            if (show) {
+                element.classList.add('loading');
+                element.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>处理中...';
+                element.disabled = true;
+                lucide.createIcons();
+            } else {
+                element.classList.remove('loading');
+                element.disabled = false;
+            }
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

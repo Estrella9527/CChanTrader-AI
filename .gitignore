@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.tox/
+.coverage
+.pytest_cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.backup
+.env.trading
+
+# Node modules
+node_modules/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+_backup_*.zip
+
+# Trading data
+trading_scheduler.log
+web_app.log
+
+# Cache
+.cache/
+.matplotlib/
+
+# User specific
+.claude/
+.claudecode/
+.cursor/
+.gemini/
+.windsurf/
+
+# macOS
+.Trash/
+.zsh_history
+.zsh_sessions/
+.zcompdump
+
+# Sunlogin
+Sunlogin/
+Sunlogin Files/
+protocol_config.conf

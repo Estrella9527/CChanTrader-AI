@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CChanTrader-AI 智能交易日报</title>
+    <style>
+        /* Radix + Tailwind inspired styles for financial email template */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #FAFAFA;
+            color: #1F2937;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+            color: white;
+            padding: 32px;
+            text-align: center;
+        }
+        
+        .header-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        
+        .header-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        /* Content area */
+        .content {
+            padding: 32px;
+        }
+        
+        .section {
+            margin-bottom: 32px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Market summary grid */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        @media (min-width: 640px) {
+            .market-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        .metric-card {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        
+        .metric-card:hover {
+            border-color: #CBD5E1;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .metric-value {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 32px;
+            font-weight: 700;
+            color: #2563EB;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #64748B;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Strategy overview */
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        @media (min-width: 640px) {
+            .strategy-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .strategy-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .strategy-name {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge-success {
+            background-color: #DCFCE7;
+            color: #166534;
+        }
+        
+        .badge-warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .badge-neutral {
+            background-color: #F1F5F9;
+            color: #475569;
+        }
+        
+        /* Stock cards */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .stock-card {
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 24px;
+            border-left: 4px solid #2563EB;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .stock-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .stock-card.high-confidence {
+            border-left-color: #22C55E;
+            background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%);
+        }
+        
+        .stock-card.medium-confidence {
+            border-left-color: #FACC15;
+            background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 100%);
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .stock-info {
+            flex: 1;
+        }
+        
+        .stock-symbol {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #1E40AF;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .stock-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        
+        .stock-price {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: #2563EB;
+            margin-bottom: 16px;
+        }
+        
+        .stock-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 16px;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-label-small {
+            font-size: 11px;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        
+        .metric-value-small {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .positive {
+            color: #22C55E;
+        }
+        
+        .negative {
+            color: #EF4444;
+        }
+        
+        .neutral {
+            color: #64748B;
+        }
+        
+        .stock-strategy {
+            background-color: #EFF6FF;
+            border: 1px solid #DBEAFE;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .strategy-text {
+            font-size: 13px;
+            color: #1E40AF;
+            line-height: 1.5;
+        }
+        
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .signal-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background-color: #F1F5F9;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .confidence-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .confidence-very-high {
+            background-color: #DCFCE7;
+            color: #166534;
+        }
+        
+        .confidence-high {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .confidence-medium {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        /* Risk warning */
+        .risk-warning {
+            background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+            border: 1px solid #F59E0B;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .risk-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #92400E;
+            margin-bottom: 12px;
+        }
+        
+        .risk-list {
+            list-style: none;
+            color: #78350F;
+        }
+        
+        .risk-list li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .risk-list li:before {
+            content: "•";
+            color: #F59E0B;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #F8FAFC;
+            border-top: 1px solid #E2E8F0;
+            padding: 24px 32px;
+            text-align: center;
+        }
+        
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .footer-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #64748B;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .footer-link {
+            color: #2563EB;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .footer-link:hover {
+            color: #1D4ED8;
+            text-decoration: underline;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 24px 16px;
+            }
+            
+            .market-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stock-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .stock-metrics {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .signals-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-logo">
+                📊 CChanTrader-AI
+            </div>
+            <h1 class="header-title">智能交易日报</h1>
+            <div class="header-subtitle">2025-06-29 • 生成时间 12:45:23</div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Market Summary -->
+            <div class="section">
+                <h2 class="section-title">
+                    📈 今日市场表现
+                </h2>
+                <div class="market-grid">
+                    <div class="metric-card">
+                        <span class="metric-icon">🔍</span>
+                        <div class="metric-value">4532</div>
+                        <div class="metric-label">扫描股票数</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">✅</span>
+                        <div class="metric-value">6</div>
+                        <div class="metric-label">入选个股数</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">📈</span>
+                        <div class="metric-value">2</div>
+                        <div class="metric-label">重点推荐数</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">🎯</span>
+                        <div class="metric-value">0.785</div>
+                        <div class="metric-label">平均评分</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Strategy Analysis -->
+            <div class="section">
+                <h2 class="section-title">
+                    🔬 策略分析概览
+                </h2>
+                <div class="strategy-grid">
+                    <div class="strategy-item">
+                        <span class="strategy-name">技术面突破</span>
+                        <span class="badge badge-success">✓ 0 只</span>
+                    </div>
+                    <div class="strategy-item">
+                        <span class="strategy-name">集合竞价强势</span>
+                        <span class="badge badge-success">✓ 5 只</span>
+                    </div>
+                    <div class="strategy-item">
+                        <span class="strategy-name">放量上涨</span>
+                        <span class="badge badge-warning">⚠ 0 只</span>
+                    </div>
+                    <div class="strategy-item">
+                        <span class="strategy-name">市值适配</span>
+                        <span class="badge badge-success">✓ 6 只</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stock Recommendations -->
+            <div class="section">
+                <h2 class="section-title">
+                    🌟 推荐个股详情
+                </h2>
+                <div class="stock-grid">
+                    
+                    <div class="stock-card ">
+                        <div class="stock-header">
+                            <div class="stock-info">
+                                <div class="stock-symbol">{{stock.symbol}}</div>
+                                <div class="stock-name">{{stock.stock_name}}</div>
+                                <div class="stock-price">¥{{stock.current_price}}</div>
+                            </div>
+                            <div class="confidence-badge confidence-{{stock.confidence.replace('_', '-')}}">
+                                {% if stock.confidence == 'very_high' %}强烈推荐{% elif stock.confidence == 'high' %}值得关注{% else %}谨慎观察{% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="stock-metrics">
+                            <div class="metric">
+                                <div class="metric-label-small">竞价表现</div>
+                                <div class="metric-value-small {% if stock.auction_ratio > 0 %}positive{% elif stock.auction_ratio < 0 %}negative{% else %}neutral{% endif %}">
+                                    {{"%+.1f"|format(stock.auction_ratio)}}%
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label-small">目标价</div>
+                                <div class="metric-value-small positive">¥{{stock.target_price}}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label-small">止损价</div>
+                                <div class="metric-value-small negative">¥{{stock.stop_loss}}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stock-strategy">
+                            <div class="strategy-text">{{stock.strategy}}</div>
+                        </div>
+                        
+                        <div class="signals-grid">
+                            {% if stock.total_score >= 0.8 %}
+                            <div class="signal-item">
+                                <span>🚀</span>
+                                <span>强势信号</span>
+                            </div>
+                            {% endif %}
+                            {% if stock.auction_ratio >= 2 %}
+                            <div class="signal-item">
+                                <span>📊</span>
+                                <span>竞价活跃</span>
+                            </div>
+                            {% endif %}
+                            {% if stock.current_price <= 10 %}
+                            <div class="signal-item">
+                                <span>💰</span>
+                                <span>低价机会</span>
+                            </div>
+                            {% endif %}
+                            {% if stock.get('market_cap_billion', 0) <= 200 %}
+                            <div class="signal-item">
+                                <span>🎯</span>
+                                <span>中小盘股</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <!-- Risk Warning -->
+            <div class="risk-warning">
+                <div class="risk-title">
+                    ⚠️ 投资风险提示
+                </div>
+                <ul class="risk-list">
+                    <li>本报告基于AI算法分析生成，模型结果仅供参考，请结合实际盘面判断</li>
+                    <li>股票投资存在市场风险，历史表现不代表未来收益，投资者应谨慎决策</li>
+                    <li>建议投资者根据自身风险承受能力，合理配置投资组合</li>
+                    <li>市场波动较大时，请及时关注止损位，控制投资风险</li>
+                    <li>本报告不构成具体投资建议，投资决策责任由投资者自行承担</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-title">CChanTrader-AI 智能交易助手</div>
+                <div class="footer-text">
+                    专业的量化分析工具，致力于为投资者提供智能化的股票筛选和风险管控解决方案。
+                </div>
+                <div class="footer-text">
+                    本邮件由系统自动生成 • 如有疑问请联系技术支持
+                </div>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">使用说明</a>
+                    <a href="#" class="footer-link">免责声明</a>
+                    <a href="#" class="footer-link">联系我们</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

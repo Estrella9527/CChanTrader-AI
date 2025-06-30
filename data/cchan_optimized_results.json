@@ -1,0 +1,836 @@
+{
+  "best_params": {
+    "ma_short": 5,
+    "ma_long": 20,
+    "rsi_buy_threshold": 30,
+    "rsi_sell_threshold": 70,
+    "volume_threshold": 1.2,
+    "momentum_threshold": 0.02
+  },
+  "selected_stocks": [
+    {
+      "symbol": "sh.600000",
+      "entry_price": 13.55,
+      "stop_loss": 12.74,
+      "take_profit": 15.58,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 84.4,
+      "volume_ratio": 2.31,
+      "momentum": 0.0981,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600004",
+      "entry_price": 9.14,
+      "stop_loss": 8.59,
+      "take_profit": 10.51,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 34.1,
+      "volume_ratio": 0.98,
+      "momentum": -0.0204,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600006",
+      "entry_price": 7.24,
+      "stop_loss": 6.81,
+      "take_profit": 8.33,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 45.9,
+      "volume_ratio": 0.96,
+      "momentum": 0.0183,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600007",
+      "entry_price": 20.46,
+      "stop_loss": 19.23,
+      "take_profit": 23.53,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 37.9,
+      "volume_ratio": 0.78,
+      "momentum": -0.0576,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600010",
+      "entry_price": 1.77,
+      "stop_loss": 1.66,
+      "take_profit": 2.04,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 46.4,
+      "volume_ratio": 1.17,
+      "momentum": -0.0221,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600011",
+      "entry_price": 7.04,
+      "stop_loss": 6.62,
+      "take_profit": 8.1,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 39.4,
+      "volume_ratio": 2.12,
+      "momentum": -0.0356,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600012",
+      "entry_price": 17.1,
+      "stop_loss": 16.07,
+      "take_profit": 19.66,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 41.1,
+      "volume_ratio": 2.8,
+      "momentum": -0.0295,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600015",
+      "entry_price": 7.93,
+      "stop_loss": 7.45,
+      "take_profit": 9.12,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 59.5,
+      "volume_ratio": 1.35,
+      "momentum": 0.0219,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600016",
+      "entry_price": 4.78,
+      "stop_loss": 4.49,
+      "take_profit": 5.5,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 62.3,
+      "volume_ratio": 1.4,
+      "momentum": 0.0021,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600018",
+      "entry_price": 5.75,
+      "stop_loss": 5.4,
+      "take_profit": 6.61,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 48.3,
+      "volume_ratio": 1.26,
+      "momentum": -0.0103,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600019",
+      "entry_price": 6.57,
+      "stop_loss": 6.18,
+      "take_profit": 7.56,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 42.9,
+      "volume_ratio": 0.99,
+      "momentum": -0.0238,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600020",
+      "entry_price": 4.79,
+      "stop_loss": 4.5,
+      "take_profit": 5.51,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 35.8,
+      "volume_ratio": 1.22,
+      "momentum": -0.0362,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600021",
+      "entry_price": 8.79,
+      "stop_loss": 8.26,
+      "take_profit": 10.11,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 39.7,
+      "volume_ratio": 0.84,
+      "momentum": -0.0179,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600022",
+      "entry_price": 1.31,
+      "stop_loss": 1.23,
+      "take_profit": 1.51,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 45.5,
+      "volume_ratio": 2.16,
+      "momentum": 0.0077,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600023",
+      "entry_price": 5.3,
+      "stop_loss": 4.98,
+      "take_profit": 6.1,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 40.6,
+      "volume_ratio": 1.08,
+      "momentum": -0.0149,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600025",
+      "entry_price": 9.62,
+      "stop_loss": 9.04,
+      "take_profit": 11.06,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 46.7,
+      "volume_ratio": 1.63,
+      "momentum": -0.0103,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600026",
+      "entry_price": 10.3,
+      "stop_loss": 9.68,
+      "take_profit": 11.84,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 53.0,
+      "volume_ratio": 0.56,
+      "momentum": -0.0419,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600027",
+      "entry_price": 5.44,
+      "stop_loss": 5.11,
+      "take_profit": 6.26,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 30.7,
+      "volume_ratio": 1.56,
+      "momentum": -0.0669,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600028",
+      "entry_price": 5.66,
+      "stop_loss": 5.32,
+      "take_profit": 6.51,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 43.7,
+      "volume_ratio": 0.83,
+      "momentum": -0.0455,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600029",
+      "entry_price": 5.9,
+      "stop_loss": 5.55,
+      "take_profit": 6.78,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 44.3,
+      "volume_ratio": 0.92,
+      "momentum": 0.0155,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600030",
+      "entry_price": 27.58,
+      "stop_loss": 25.93,
+      "take_profit": 31.72,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 61.6,
+      "volume_ratio": 1.93,
+      "momentum": 0.0487,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600033",
+      "entry_price": 3.55,
+      "stop_loss": 3.34,
+      "take_profit": 4.08,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 29.4,
+      "volume_ratio": 1.22,
+      "momentum": -0.0193,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600035",
+      "entry_price": 4.27,
+      "stop_loss": 4.01,
+      "take_profit": 4.91,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 22.7,
+      "volume_ratio": 2.03,
+      "momentum": -0.049,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600036",
+      "entry_price": 46.22,
+      "stop_loss": 43.45,
+      "take_profit": 53.15,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 63.7,
+      "volume_ratio": 1.8,
+      "momentum": 0.023,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600038",
+      "entry_price": 38.01,
+      "stop_loss": 35.73,
+      "take_profit": 43.71,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 58.7,
+      "volume_ratio": 1.55,
+      "momentum": 0.0188,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600039",
+      "entry_price": 9.96,
+      "stop_loss": 9.36,
+      "take_profit": 11.45,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 75.2,
+      "volume_ratio": 1.65,
+      "momentum": 0.0364,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600048",
+      "entry_price": 8.05,
+      "stop_loss": 7.57,
+      "take_profit": 9.26,
+      "total_score": 1.0,
+      "trend": "bearish",
+      "rsi": 44.1,
+      "volume_ratio": 1.37,
+      "momentum": -0.0012,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600051",
+      "entry_price": 7.25,
+      "stop_loss": 6.82,
+      "take_profit": 8.34,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 47.7,
+      "volume_ratio": 1.0,
+      "momentum": -0.0068,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600052",
+      "entry_price": 4.36,
+      "stop_loss": 4.1,
+      "take_profit": 5.01,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 48.9,
+      "volume_ratio": 1.31,
+      "momentum": 0.0406,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600053",
+      "entry_price": 15.43,
+      "stop_loss": 14.5,
+      "take_profit": 17.74,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 49.9,
+      "volume_ratio": 0.71,
+      "momentum": 0.0568,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600054",
+      "entry_price": 11.67,
+      "stop_loss": 10.97,
+      "take_profit": 13.42,
+      "total_score": 1.0,
+      "trend": "neutral",
+      "rsi": 48.0,
+      "volume_ratio": 3.26,
+      "momentum": 0.0157,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600057",
+      "entry_price": 7.03,
+      "stop_loss": 6.61,
+      "take_profit": 8.08,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 61.7,
+      "volume_ratio": 0.8,
+      "momentum": -0.0223,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600058",
+      "entry_price": 7.76,
+      "stop_loss": 7.29,
+      "take_profit": 8.92,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 60.7,
+      "volume_ratio": 1.0,
+      "momentum": 0.0374,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600059",
+      "entry_price": 10.77,
+      "stop_loss": 10.12,
+      "take_profit": 12.39,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 48.1,
+      "volume_ratio": 0.81,
+      "momentum": 0.0642,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600060",
+      "entry_price": 23.08,
+      "stop_loss": 21.7,
+      "take_profit": 26.54,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 52.4,
+      "volume_ratio": 0.92,
+      "momentum": 0.0308,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600061",
+      "entry_price": 7.55,
+      "stop_loss": 7.1,
+      "take_profit": 8.68,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 64.8,
+      "volume_ratio": 1.52,
+      "momentum": 0.0371,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600063",
+      "entry_price": 4.59,
+      "stop_loss": 4.31,
+      "take_profit": 5.28,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 60.0,
+      "volume_ratio": 0.76,
+      "momentum": 0.0246,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600064",
+      "entry_price": 7.79,
+      "stop_loss": 7.32,
+      "take_profit": 8.96,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 63.5,
+      "volume_ratio": 1.4,
+      "momentum": 0.0078,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600066",
+      "entry_price": 25.15,
+      "stop_loss": 23.64,
+      "take_profit": 28.92,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 60.9,
+      "volume_ratio": 0.74,
+      "momentum": 0.0162,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600067",
+      "entry_price": 2.97,
+      "stop_loss": 2.79,
+      "take_profit": 3.42,
+      "total_score": 1.0,
+      "trend": "bullish",
+      "rsi": 52.6,
+      "volume_ratio": 1.21,
+      "momentum": 0.0532,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600062",
+      "entry_price": 18.66,
+      "stop_loss": 17.54,
+      "take_profit": 21.46,
+      "total_score": 0.95,
+      "trend": "bearish",
+      "rsi": 23.2,
+      "volume_ratio": 0.63,
+      "momentum": -0.0317,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600009",
+      "entry_price": 31.77,
+      "stop_loss": 29.86,
+      "take_profit": 36.54,
+      "total_score": 0.9,
+      "trend": "bearish",
+      "rsi": 35.4,
+      "volume_ratio": 0.85,
+      "momentum": -0.0097,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600031",
+      "entry_price": 17.93,
+      "stop_loss": 16.85,
+      "take_profit": 20.62,
+      "total_score": 0.9,
+      "trend": "bearish",
+      "rsi": 40.5,
+      "volume_ratio": 0.87,
+      "momentum": 0.0079,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600050",
+      "entry_price": 5.31,
+      "stop_loss": 4.99,
+      "take_profit": 6.11,
+      "total_score": 0.9,
+      "trend": "bearish",
+      "rsi": 41.3,
+      "volume_ratio": 1.03,
+      "momentum": 0.0076,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600008",
+      "entry_price": 3.04,
+      "stop_loss": 2.86,
+      "take_profit": 3.5,
+      "total_score": 0.85,
+      "trend": "bearish",
+      "rsi": 23.7,
+      "volume_ratio": 1.04,
+      "momentum": -0.0065,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600037",
+      "entry_price": 7.61,
+      "stop_loss": 7.15,
+      "take_profit": 8.75,
+      "total_score": 0.85,
+      "trend": "bearish",
+      "rsi": 23.8,
+      "volume_ratio": 0.39,
+      "momentum": -0.0104,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600017",
+      "entry_price": 3.12,
+      "stop_loss": 2.93,
+      "take_profit": 3.59,
+      "total_score": 0.8,
+      "trend": "bearish",
+      "rsi": 41.5,
+      "volume_ratio": 0.72,
+      "momentum": 0.0032,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600032",
+      "entry_price": 7.56,
+      "stop_loss": 7.11,
+      "take_profit": 8.69,
+      "total_score": 0.8,
+      "trend": "bearish",
+      "rsi": 34.6,
+      "volume_ratio": 0.73,
+      "momentum": 0.0013,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600055",
+      "entry_price": 17.35,
+      "stop_loss": 16.31,
+      "take_profit": 19.95,
+      "total_score": 0.8,
+      "trend": "bearish",
+      "rsi": 30.7,
+      "volume_ratio": 0.73,
+      "momentum": -0.0034,
+      "risk_reward_ratio": 2.5
+    },
+    {
+      "symbol": "sh.600056",
+      "entry_price": 10.36,
+      "stop_loss": 9.74,
+      "take_profit": 11.91,
+      "total_score": 0.8,
+      "trend": "bearish",
+      "rsi": 35.7,
+      "volume_ratio": 0.62,
+      "momentum": -0.0067,
+      "risk_reward_ratio": 2.5
+    }
+  ],
+  "backtest_result": {
+    "total_trades": 10,
+    "win_rate": 0.4,
+    "avg_profit_pct": 2.41,
+    "total_return_pct": 24.09,
+    "avg_win_pct": 15.07,
+    "avg_loss_pct": -6.03,
+    "profit_factor": 2.5,
+    "results": [
+      {
+        "symbol": "sh.600000",
+        "entry_price": 13.55,
+        "exit_price": 15.58,
+        "profit_pct": 0.1498154981549815,
+        "is_success": true
+      },
+      {
+        "symbol": "sh.600004",
+        "entry_price": 9.14,
+        "exit_price": 8.59,
+        "profit_pct": -0.06017505470459526,
+        "is_success": false
+      },
+      {
+        "symbol": "sh.600006",
+        "entry_price": 7.24,
+        "exit_price": 6.81,
+        "profit_pct": -0.05939226519337025,
+        "is_success": false
+      },
+      {
+        "symbol": "sh.600007",
+        "entry_price": 20.46,
+        "exit_price": 19.23,
+        "profit_pct": -0.06011730205278594,
+        "is_success": false
+      },
+      {
+        "symbol": "sh.600010",
+        "entry_price": 1.77,
+        "exit_price": 2.04,
+        "profit_pct": 0.15254237288135594,
+        "is_success": true
+      },
+      {
+        "symbol": "sh.600011",
+        "entry_price": 7.04,
+        "exit_price": 8.1,
+        "profit_pct": 0.15056818181818177,
+        "is_success": true
+      },
+      {
+        "symbol": "sh.600012",
+        "entry_price": 17.1,
+        "exit_price": 19.66,
+        "profit_pct": 0.1497076023391812,
+        "is_success": true
+      },
+      {
+        "symbol": "sh.600015",
+        "entry_price": 7.93,
+        "exit_price": 7.45,
+        "profit_pct": -0.06052963430012605,
+        "is_success": false
+      },
+      {
+        "symbol": "sh.600016",
+        "entry_price": 4.78,
+        "exit_price": 4.49,
+        "profit_pct": -0.06066945606694561,
+        "is_success": false
+      },
+      {
+        "symbol": "sh.600018",
+        "entry_price": 5.75,
+        "exit_price": 5.4,
+        "profit_pct": -0.060869565217391244,
+        "is_success": false
+      }
+    ]
+  },
+  "optimization_summary": {
+    "best_params": {
+      "ma_short": 5,
+      "ma_long": 20,
+      "rsi_buy_threshold": 30,
+      "rsi_sell_threshold": 70,
+      "volume_threshold": 1.2,
+      "momentum_threshold": 0.02
+    },
+    "best_score": 0.9855,
+    "all_results": [
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 30,
+          "rsi_sell_threshold": 70,
+          "volume_threshold": 1.2,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.971,
+        "evaluation_score": 0.9855
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 30,
+          "rsi_sell_threshold": 75,
+          "volume_threshold": 1.2,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.971,
+        "evaluation_score": 0.9855
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 30,
+          "rsi_sell_threshold": 80,
+          "volume_threshold": 1.2,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.971,
+        "evaluation_score": 0.9855
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 35,
+          "rsi_sell_threshold": 70,
+          "volume_threshold": 1.2,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9690000000000001,
+        "evaluation_score": 0.9844999999999999
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 35,
+          "rsi_sell_threshold": 75,
+          "volume_threshold": 1.2,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9690000000000001,
+        "evaluation_score": 0.9844999999999999
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 35,
+          "rsi_sell_threshold": 80,
+          "volume_threshold": 1.2,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9690000000000001,
+        "evaluation_score": 0.9844999999999999
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 30,
+          "rsi_sell_threshold": 70,
+          "volume_threshold": 1.5,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9519999999999998,
+        "evaluation_score": 0.976
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 30,
+          "rsi_sell_threshold": 75,
+          "volume_threshold": 1.5,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9519999999999998,
+        "evaluation_score": 0.976
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 30,
+          "rsi_sell_threshold": 80,
+          "volume_threshold": 1.5,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9519999999999998,
+        "evaluation_score": 0.976
+      },
+      {
+        "params": {
+          "ma_short": 5,
+          "ma_long": 20,
+          "rsi_buy_threshold": 35,
+          "rsi_sell_threshold": 70,
+          "volume_threshold": 1.5,
+          "momentum_threshold": 0.02
+        },
+        "selected_count": 50,
+        "avg_score": 0.9490000000000001,
+        "evaluation_score": 0.9744999999999999
+      }
+    ]
+  }
+}
