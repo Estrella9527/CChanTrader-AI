@@ -1025,3 +1025,15 @@ if __name__ == '__main__':
     print("🛑 停止服务: Ctrl+C")
     
     app.run(debug=True, host='0.0.0.0', port=8080)
+
+@app.route("/")
+def home():
+    return "✅ CChanTrader-AI 已成功部署"
+
+@app.route("/health")
+def health():
+    return "ok", 200
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
