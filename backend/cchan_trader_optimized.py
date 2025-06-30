@@ -717,7 +717,7 @@ def optimized_cchan_main(test_mode: bool = True, max_stocks: int = 50):
             'optimization_summary': optimization_result if 'optimization_result' in locals() else None
         }
         
-        output_file = '/Users/yang/cchan_optimized_results.json'
+        output_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'cchan_optimized_results.json')
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
         

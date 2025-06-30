@@ -301,7 +301,7 @@ def multi_market_analysis():
                     print()
         
         # 保存结果
-        output_file = '/Users/yang/multi_market_analysis.json'
+        output_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'multi_market_analysis.json')
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(selected_stocks, f, ensure_ascii=False, indent=2)
         

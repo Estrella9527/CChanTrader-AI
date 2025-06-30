@@ -4,10 +4,11 @@
 CChanTrader-AI 策略解释功能集成测试
 """
 
+import os
 import sys
 import sqlite3
 import json
-sys.path.append('/Users/yang')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_explain_generator():
     """测试解释生成器"""
@@ -174,7 +175,7 @@ def test_template_modifications():
     print("🧪 测试模板修改...")
     
     try:
-        with open('/Users/yang/templates/recommendations.html', 'r', encoding='utf-8') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'templates/recommendations.html'), 'r', encoding='utf-8') as f:
             content = f.read()
         
         checks = [

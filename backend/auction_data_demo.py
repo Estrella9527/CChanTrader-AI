@@ -5,6 +5,7 @@ A股集合竞价数据获取演示程序
 整合AKShare和BaoStock，展示完整的竞价数据分析流程
 """
 
+import os
 import akshare as ak
 import baostock as bs
 import pandas as pd

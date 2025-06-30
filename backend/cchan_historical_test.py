@@ -371,7 +371,7 @@ def historical_stock_selection():
                 print(f'   ⚖️ 风险回报比: 1:{stock["risk_reward_ratio"]}')
         
         # 保存分析结果
-        output_file = f'/Users/yang/historical_analysis_{HISTORICAL_END_DATE.replace("-", "")}.json'
+        output_file = fos.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'historical_analysis_{HISTORICAL_END_DATE.replace("-", "")}.json')
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(selected_stocks, f, ensure_ascii=False, indent=2)
         

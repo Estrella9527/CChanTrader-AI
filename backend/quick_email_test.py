@@ -5,8 +5,9 @@
 验证新授权码是否有效
 """
 
+import os
 import sys
-sys.path.append('/Users/yang')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.services.email_config import EmailSender
 from web_app import generate_test_report_data

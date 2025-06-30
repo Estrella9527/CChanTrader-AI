@@ -4,8 +4,9 @@
 测试策略配置保存和加载功能
 """
 
+import os
 import sys
-sys.path.append('/Users/yang')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from web_app import WebAppManager
 

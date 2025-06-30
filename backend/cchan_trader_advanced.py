@@ -858,7 +858,7 @@ def advanced_cchan_main(test_mode: bool = True, max_stocks: int = 50):
             print('❌ 当前市场条件下未找到符合条件的股票')
         
         # 保存详细结果
-        output_file = '/Users/yang/cchan_advanced_results.json'
+        output_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'cchan_advanced_results.json')
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(selected_stocks, f, ensure_ascii=False, indent=2)
         

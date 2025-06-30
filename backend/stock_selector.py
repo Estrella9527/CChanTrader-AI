@@ -168,7 +168,7 @@ def main():
         print(f'\n总计筛选出 {len(selected_stocks)} 只股票')
         
         # 保存结果到JSON
-        with open('/Users/yang/selected_stocks.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'selected_stocks.json'), 'w', encoding='utf-8') as f:
             json.dump(selected_stocks, f, ensure_ascii=False, indent=2)
         print('结果已保存到 selected_stocks.json')
 

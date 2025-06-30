@@ -34,7 +34,7 @@ def check_dependencies():
 
 def check_environment():
     """检查环境配置"""
-    env_file = '/Users/yang/.env'
+    env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
     
     if not os.path.exists(env_file):
         print("⚠️ 未找到环境配置文件 .env")

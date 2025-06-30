@@ -665,7 +665,7 @@ def cchan_trader_main(test_mode: bool = True, max_stocks: int = 20):
             print()
             
         # 保存结果
-        with open('/Users/yang/cchan_results.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'cchan_results.json'), 'w', encoding='utf-8') as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
             
         print(f'结果已保存到 cchan_results.json')

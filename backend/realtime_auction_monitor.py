@@ -5,6 +5,7 @@ CChanTrader-AI 实时竞价监控模块
 实时获取和分析集合竞价数据，支持开盘前决策
 """
 
+import os
 import time
 import json
 import pandas as pd

@@ -6,7 +6,8 @@ CChanTrader-AI 深度股票分析引擎
 """
 
 import sys
-sys.path.append('/Users/yang')
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
 import pandas as pd

@@ -38,7 +38,7 @@ def test_config_save_load():
     }
     
     # 导入WebAppManager进行保存测试
-    sys.path.append('/Users/yang')
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     try:
         from web_app import WebAppManager
         

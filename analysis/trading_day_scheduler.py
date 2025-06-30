@@ -14,11 +14,15 @@ import os
 from daily_report_generator import DailyReportGenerator
 
 # 配置日志
+log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'trading_scheduler.log')
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/Users/yang/trading_scheduler.log', encoding='utf-8'),
+        logging.FileHandler(log_file, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -242,18 +246,18 @@ def create_startup_script():
     script_content = f"""#!/bin/bash
 # CChanTrader-AI 交易日调度器启动脚本
 
-cd /Users/yang
-export PYTHONPATH=/Users/yang:$PYTHONPATH
+cd /app
+export PYTHONPATH=/app:$PYTHONPATH
 
 # 启动调度器
 python3 trading_day_scheduler.py --daemon
 
 echo "📅 CChanTrader-AI 交易日调度器已启动"
-echo "📝 日志文件: /Users/yang/trading_scheduler.log"
+echo "📝 日志文件: /app/data/trading_scheduler.log"
 echo "🛑 停止命令: python3 trading_day_scheduler.py --stop"
 """
     
-    script_path = '/Users/yang/start_scheduler.sh'
+    script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'start_scheduler.sh')
     with open(script_path, 'w') as f:
         f.write(script_content)
     

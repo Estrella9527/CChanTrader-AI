@@ -34,7 +34,7 @@ def check_dependencies():
 
 def check_environment():
     """检查环境配置"""
-    env_file = '/Users/yang/.env'
+    env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
     
     if not os.path.exists(env_file):
         print("⚠️ 未找到环境配置文件 .env")
@@ -66,7 +66,7 @@ EMAIL_PROVIDER=qq
 AIHUBMIX_API_KEY=your_api_key
 """
     
-    with open('/Users/yang/.env', 'w', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'), 'w', encoding='utf-8') as f:
         f.write(env_example)
     
     print("✅ 已创建配置文件 .env")

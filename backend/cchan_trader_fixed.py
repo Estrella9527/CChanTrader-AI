@@ -309,7 +309,7 @@ def cchan_trader_main(test_mode=True, max_stocks=20):
             print(f'   置信度: {stock["confidence"]}')
             
         # 保存结果
-        with open('/Users/yang/cchan_results_fixed.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'cchan_results_fixed.json'), 'w', encoding='utf-8') as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
             
         return results

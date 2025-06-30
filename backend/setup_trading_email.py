@@ -59,7 +59,7 @@ AIHUBMIX_API_KEY=your_api_key_here
 """
     
     # 保存配置文件
-    env_path = '/Users/yang/.env'
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
     with open(env_path, 'w', encoding='utf-8') as f:
         f.write(env_content)
     

@@ -5,6 +5,7 @@ CChanTrader-AI 交易日报生成器
 在每个交易日9:25-9:29自动分析并生成日报
 """
 
+import os
 import json
 import pandas as pd
 import numpy as np
@@ -404,7 +405,7 @@ class DailyReportGenerator:
             
             # 保存详细结果
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            json_file = f'/Users/yang/daily_report_{timestamp}.json'
+            json_file = fos.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'daily_report_{timestamp}.json')
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(report_data, f, ensure_ascii=False, indent=2)
             

@@ -262,7 +262,7 @@ def fixed_market_analysis():
                     print(f'     🎯 策略: 入场{stock["entry_price"]:.2f} 止损{stock["stop_loss"]:.2f} 目标{stock["target_price"]:.2f}')
         
         # 保存结果
-        output_file = '/Users/yang/fixed_market_results.json'
+        output_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'fixed_market_results.json')
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(selected_stocks, f, ensure_ascii=False, indent=2)
         

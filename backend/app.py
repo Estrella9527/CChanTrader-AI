@@ -198,7 +198,7 @@ class WebAppManager:
     
     def save_email_config(self, config: dict):
         """保存邮件配置"""
-        env_path = '/Users/yang/.env'
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
         
         # 创建新的环境变量内容
         env_content = f"""# CChanTrader-AI 邮件配置
@@ -1010,30 +1010,20 @@ def get_stock_analysis_detail(symbol):
             "prices": []
         })
 
-if __name__ == '__main__':
-    # 确保模板目录存在
-    template_dir = '/Users/yang/templates'
-    static_dir = '/Users/yang/static'
-    
-    if not os.path.exists(template_dir):
-        os.makedirs(template_dir)
-    if not os.path.exists(static_dir):
-        os.makedirs(static_dir)
+@app.route("/health")
+def health():
+    """健康检查端点"""
+    return "ok", 200
+
+if __name__ == "__main__":
+    # 确保数据目录存在
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
+    os.makedirs(data_dir, exist_ok=True)
     
     print("🚀 启动 CChanTrader-AI Web管理平台...")
     print("🌐 访问地址: http://localhost:8080")
     print("🛑 停止服务: Ctrl+C")
     
-    app.run(debug=True, host='0.0.0.0', port=8080)
-
-@app.route("/")
-def home():
-    return "✅ CChanTrader-AI 已成功部署"
-
-@app.route("/health")
-def health():
-    return "ok", 200
-
-if __name__ == "__main__":
+    # Railway 部署时使用环境变量中的端口
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)

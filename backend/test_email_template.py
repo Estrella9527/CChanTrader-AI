@@ -4,8 +4,9 @@
 测试专业金融邮件模板
 """
 
+import os
 import sys
-sys.path.append('/Users/yang')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.services.email_config import EmailSender
 from web_app import generate_test_report_data
@@ -56,7 +57,7 @@ def test_professional_email_template():
         
         # 4. 保存预览文件
         print("\n4. 生成邮件预览文件:")
-        preview_path = '/Users/yang/email_preview.html'
+        preview_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'email_preview.html')
         with open(preview_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
         print(f"✅ 预览文件已保存: {preview_path}")

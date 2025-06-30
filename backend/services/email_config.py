@@ -176,7 +176,7 @@ class EmailSender:
         market_cap_fit_count = len([r for r in recommendations if 40 <= r.get('market_cap_billion', 0) <= 200])
         
         # 读取专业模板文件
-        template_path = '/Users/yang/email_template.html'
+        template_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'email_template.html')
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
                 template_content = f.read()

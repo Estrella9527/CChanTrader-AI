@@ -424,7 +424,7 @@ def june6_stock_analysis():
                 print(f'       持仓: {stock["holding_period"]}')
         
         # 保存分析结果
-        output_file = f'/Users/yang/analysis_june6_prediction.json'
+        output_file = fos.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'analysis_june6_prediction.json')
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(selected_stocks, f, ensure_ascii=False, indent=2)
         
