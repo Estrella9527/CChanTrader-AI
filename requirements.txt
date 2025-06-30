@@ -1,20 +1,8 @@
-# ✅ 核心 Web 框架
 Flask>=2.2.0
-Jinja2>=3.1.0
-Werkzeug>=2.2.0
-python-dotenv
-
-# ✅ 数据分析与选股
 baostock>=0.8.8
+akshare>=1.17.8
 pandas>=2.2.0
 numpy>=1.24.0
-requests
 schedule
-tabulate
-
-# ✅ 表格处理（如使用 Excel）
-openpyxl
-xlrd
-
-# ✅ 可选功能（如邮件、日志、任务调度）
 tqdm
+python-dotenv
